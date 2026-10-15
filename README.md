@@ -121,7 +121,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
       <td align="center">08-10-2025</td>
       <td align="center">Praktikum 06</td>
       <td>Desain GUI, Navigasi, dan Integrasi API dengan JSON Serialization di Flutter</td>
-      <td align="center"><a href="https://drive.google.com/drive/folders/1yWMu0ss4XXfOapd41RZPO_qPLRb2mwTl">📄 Modul 10</a></td>
+      <td align="center"><a href="https://drive.google.com/drive/folders/1yWMu0ss4XXfOapd41RZPO_qPLRb2mwTl?hl=ID">📄 Modul 10</a></td>
       <td align="center"><a href="https://github.com/Satria6Salam/Aplikasi-Mobile/tree/main/modul_10">💻 Program</a></td>
     </tr>
   </tbody>
