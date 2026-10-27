@@ -124,6 +124,14 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
       <td align="center"><a href="https://drive.google.com/file/d/1A7Wh1qyP1gPXp5fwMpq8FehEaaCwtjpk/view?usp=drive_link">📄 Modul 10</a></td>
       <td align="center"><a href="https://github.com/Satria6Salam/Aplikasi-Mobile/tree/main/modul_10">💻 Program</a></td>
     </tr>
+    <tr>
+      <td align="center"><b>10</b></td>
+      <td align="center">020-10-2025</td>
+      <td align="center">Praktikum 07</td>
+      <td>Manajemen State dengan GetX</td>
+      <td align="center"><a href="https://drive.google.com/file/d/1fq-wE_aIciDx6pHv10CRodlZeF8CmgIK/view">📄 Modul 11</a></td>
+      <td align="center"><a href="https://github.com/Satria6Salam/Aplikasi-Mobile/tree/main/modul_11">💻 Program</a></td>
+    </tr>
   </tbody>
 </table>
 
