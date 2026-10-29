@@ -21,7 +21,6 @@ Aplikasi Android (Flutter) yang memindai foto struk belanja, membaca teksnya sec
 10. [Struktur Folder](#10-struktur-folder)
 11. [Teknologi](#11-teknologi)
 12. [Keterbatasan](#12-keterbatasan)
-13. [Tim Pengembang](#13-tim-pengembang)
 
 ---
 
