@@ -153,7 +153,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
       <td align="center">029-10-2025</td>
       <td align="center">UTS</td>
       <td>Aplikasi Smart Receipt</td>
-      <td align="center"><a href="">📄 Modul UTS</a></td>
+      <td align="center"><a href="https://drive.google.com/file/d/1QcjY9hQcnaiWsr9G6grjSQ0Lihjohbiw/view">📄 Modul UTS</a></td>
       <td align="center"><a href="https://github.com/Satria6Salam/Aplikasi-Mobile/tree/main/smart_receipt">💻 Program</a></td>
     </tr>
   </tbody>
