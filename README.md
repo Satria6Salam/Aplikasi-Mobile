@@ -138,7 +138,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
       <td align="center">Praktikum 08</td>
       <td>Implementasi GPS dan Geocoding pada Flutter</td>
       <td align="center"><a href="https://drive.google.com/file/d/18cUt4MQRIhlqKp7veWVgarv9wVnDIlUW/view">📄 Modul 12</a></td>
-      <td align="center"><a href="https://github.com/Satria6Salam/Aplikasi-Mobile/tree/main/modul_12">💻 Program</a></td>
+      <td align="center"><a href="https://github.com/Satria6Salam/Aplikasi-Mobile/tree/main/lokasi_flutter">💻 Program</a></td>
     </tr>
     <tr>
       <td align="center"><b>10</b></td>
