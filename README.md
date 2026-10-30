@@ -46,7 +46,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
   <tbody>
     <tr>
       <td align="center"><b>01</b></td>
-      <td align="center">03-09-2025</td>
+      <td align="center">03-09-2026</td>
       <td align="center">Praktikum 01</td>
       <td>Pengenalan Mobile Programming dan Setup Lingkungan</td>
       <td align="center"></td>
@@ -54,7 +54,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>02</b></td>
-      <td align="center">03-09-2025</td>
+      <td align="center">03-09-2026</td>
       <td align="center">Praktikum 01</td>
       <td>Widget Row dan Column</td>
       <td align="center"></td>
@@ -62,7 +62,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>03</b></td>
-      <td align="center">10-09-2025</td>
+      <td align="center">10-09-2026</td>
       <td align="center">Praktikum 02</td>
       <td>Pengaturan Layout Row dan Column di Flutter</td>
       <td align="center"></td>
@@ -70,7 +70,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>04</b></td>
-      <td align="center">10-09-2025</td>
+      <td align="center">10-09-2026</td>
       <td align="center">Praktikum 02</td>
       <td>Widget Flexible dan Expanded</td>
       <td align="center"></td>
@@ -78,7 +78,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>05</b></td>
-      <td align="center">17-09-2025</td>
+      <td align="center">17-09-2026</td>
       <td align="center">Praktikum 03</td>
       <td>Widget Flexible dan Expanded</td>
       <td align="center"></td>
@@ -86,7 +86,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>06</b></td>
-      <td align="center">17-09-2025</td>
+      <td align="center">17-09-2026</td>
       <td align="center">Praktikum 03</td>
       <td>Widget Flexible dan Expanded</td>
       <td align="center"></td>
@@ -94,7 +94,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>07</b></td>
-      <td align="center">24-09-2025</td>
+      <td align="center">24-09-2026</td>
       <td align="center">Praktikum 04</td>
       <td>Navigasi Antar Halaman Menggunakan MaterialPageRoute dan Named Route</td>
       <td align="center"></td>
@@ -102,7 +102,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>08</b></td>
-      <td align="center">24-09-2025</td>
+      <td align="center">24-09-2026</td>
       <td align="center">Praktikum 04</td>
       <td>Navigasi Antar Halaman dengan Mengirimkan Argumen Menggunakan Named Route</td>
       <td align="center"></td>
@@ -110,7 +110,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>09</b></td>
-      <td align="center">01-10-2025</td>
+      <td align="center">01-10-2026</td>
       <td align="center">Praktikum 05</td>
       <td>StatefulWidget</td>
       <td align="center"></td>
@@ -118,7 +118,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>10</b></td>
-      <td align="center">08-10-2025</td>
+      <td align="center">08-10-2026</td>
       <td align="center">Praktikum 06</td>
       <td>Desain GUI, Navigasi, dan Integrasi API dengan JSON Serialization di Flutter</td>
       <td align="center"><a href="https://drive.google.com/file/d/1A7Wh1qyP1gPXp5fwMpq8FehEaaCwtjpk/view?usp=drive_link">📄 Modul 10</a></td>
@@ -126,7 +126,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>10</b></td>
-      <td align="center">020-10-2025</td>
+      <td align="center">15-10-2026</td>
       <td align="center">Praktikum 07</td>
       <td>Manajemen State dengan GetX</td>
       <td align="center"><a href="https://drive.google.com/file/d/1fq-wE_aIciDx6pHv10CRodlZeF8CmgIK/view">📄 Modul 11</a></td>
@@ -134,7 +134,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>10</b></td>
-      <td align="center">029-10-2025</td>
+      <td align="center">30-10-2026</td>
       <td align="center">Praktikum 08</td>
       <td>Implementasi GPS dan Geocoding pada Flutter</td>
       <td align="center"><a href="https://drive.google.com/file/d/18cUt4MQRIhlqKp7veWVgarv9wVnDIlUW/view">📄 Modul 12</a></td>
@@ -142,7 +142,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>10</b></td>
-      <td align="center">029-10-2025</td>
+      <td align="center">30-10-2026</td>
       <td align="center">Praktikum 09</td>
       <td>Implementasi CRUD Rest API pada Flutter</td>
       <td align="center"><a href="https://drive.google.com/file/d/1_zpK1xXbnMxZZMD86aHx0k0PDZTNKkHm/view">📄 Modul 13</a></td>
@@ -150,7 +150,7 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     </tr>
     <tr>
       <td align="center"><b>10</b></td>
-      <td align="center">029-10-2025</td>
+      <td align="center">25-10-2026</td>
       <td align="center">UTS</td>
       <td>Aplikasi Smart Receipt</td>
       <td align="center"><a href="https://drive.google.com/file/d/1QcjY9hQcnaiWsr9G6grjSQ0Lihjohbiw/view">📄 Modul UTS</a></td>
