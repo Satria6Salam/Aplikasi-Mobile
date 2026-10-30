@@ -135,6 +135,22 @@ Berikut adalah rincian topik materi, dokumen laporan PDF, serta tautan repositor
     <tr>
       <td align="center"><b>10</b></td>
       <td align="center">029-10-2025</td>
+      <td align="center">Praktikum 08</td>
+      <td>Implementasi GPS dan Geocoding pada Flutter</td>
+      <td align="center"><a href="https://drive.google.com/file/d/18cUt4MQRIhlqKp7veWVgarv9wVnDIlUW/view">📄 Modul 12</a></td>
+      <td align="center"><a href="https://github.com/Satria6Salam/Aplikasi-Mobile/tree/main/modul_12">💻 Program</a></td>
+    </tr>
+    <tr>
+      <td align="center"><b>10</b></td>
+      <td align="center">029-10-2025</td>
+      <td align="center">Praktikum 09</td>
+      <td>Implementasi CRUD Rest API pada Flutter</td>
+      <td align="center"><a href="https://drive.google.com/file/d/18cUt4MQRIhlqKp7veWVgarv9wVnDIlUW/view">📄 Modul 13</a></td>
+      <td align="center"><a href="https://github.com/Satria6Salam/Aplikasi-Mobile/tree/main/modul_13">💻 Program</a></td>
+    </tr>
+    <tr>
+      <td align="center"><b>10</b></td>
+      <td align="center">029-10-2025</td>
       <td align="center">UTS</td>
       <td>Aplikasi Smart Receipt</td>
       <td align="center"><a href="">📄 Modul UTS</a></td>
