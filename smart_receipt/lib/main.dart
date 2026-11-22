@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,21 +11,41 @@ import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/app_router.dart';
 import 'data/database/app_database.dart';
+import 'core/theme/category_palette.dart';
 import 'data/models/category_model.dart';
+import 'data/repositories/budget_repository.dart';
+import 'data/repositories/shopping_plan_repository.dart';
+import 'data/repositories/store_location_repository.dart';
 import 'data/repositories/category_repository.dart';
+import 'data/repositories/recurring_repository.dart';
 import 'data/repositories/ml_classification_repository.dart';
 import 'data/repositories/ocr_result_repository.dart';
 import 'data/repositories/parsed_receipt_repository.dart';
 import 'data/repositories/session_repository.dart';
 import 'data/repositories/transaction_repository.dart';
 import 'data/repositories/user_repository.dart';
+import 'services/budget_service.dart';
+import 'services/shopping_plan_service.dart';
+import 'services/geocoding_service.dart';
+import 'services/store_location_service.dart';
+import 'services/export_service.dart';
+import 'services/image_enhancement_service.dart';
 import 'services/image_format_service.dart';
 import 'services/image_picker_service.dart';
 import 'services/image_storage_service.dart';
 import 'services/ml_service.dart';
+import 'services/notification_service.dart';
 import 'services/ocr_service.dart';
 import 'services/parsing_service.dart';
+import 'services/recurring_service.dart';
+import 'services/reminder_coordinator.dart';
 import 'viewmodels/auth_viewmodel.dart';
+import 'viewmodels/budget_viewmodel.dart';
+import 'viewmodels/shopping_plan_viewmodel.dart';
+import 'viewmodels/category_management_viewmodel.dart';
+import 'viewmodels/data_tools_viewmodel.dart';
+import 'viewmodels/manual_entry_viewmodel.dart';
+import 'viewmodels/reminder_viewmodel.dart';
 import 'viewmodels/dashboard_viewmodel.dart';
 import 'viewmodels/profile_viewmodel.dart';
 import 'viewmodels/scan_viewmodel.dart';
@@ -47,15 +69,58 @@ Future<void> main() async {
       MlClassificationRepository();
   final TransactionRepository transactionRepository = TransactionRepository();
   final SessionRepository sessionRepository = SessionRepository();
+  final BudgetRepository budgetRepository = BudgetRepository();
+  final RecurringRepository recurringRepository = RecurringRepository();
+  final ShoppingPlanRepository shoppingPlanRepository =
+      ShoppingPlanRepository();
+
+  // Ikon dan warna kustom kategori dimuat sebelum tampilan pertama.
+  CategoryPalette.applyTo(await categoryRepository.getAll());
 
   // Service (OCR, parsing, ML, penyimpanan gambar).
   final OcrService ocrService = OcrService();
   const ParsingService parsingService = ParsingService();
   final MlService mlService = MlService();
-  await mlService.initialize(); // Melatih model TF-IDF + Naive Bayes (offline).
   final ImageStorageService imageStorageService = ImageStorageService();
   final ImageFormatService imageFormatService = ImageFormatService();
+  final ImageEnhancementService imageEnhancementService =
+      ImageEnhancementService();
   final ImagePickerService imagePickerService = ImagePickerService();
+
+  // Fitur UAS: notifikasi, anggaran, transaksi berulang, dan ekspor.
+  final NotificationService notificationService = NotificationService();
+  final BudgetService budgetService = BudgetService(
+    budgets: budgetRepository,
+    transactions: transactionRepository,
+    categories: categoryRepository,
+    notifications: notificationService,
+  );
+  final RecurringService recurringService = RecurringService(
+    recurring: recurringRepository,
+    transactions: transactionRepository,
+  );
+  final ReminderCoordinator reminderCoordinator = ReminderCoordinator(
+    notifications: notificationService,
+    transactions: transactionRepository,
+    recurring: recurringService,
+    budgets: budgetService,
+  );
+  final ExportService exportService = ExportService(
+    transactions: transactionRepository,
+  );
+  // Rencana belanja: dicocokkan dengan tokenizer model AI agar singkatan
+  // struk ("TLR AYM") tetap cocok dengan rencana ("Telur ayam").
+  final ShoppingPlanService shoppingPlanService = ShoppingPlanService(
+    repository: shoppingPlanRepository,
+    matcher: ShoppingMatcher(tokenizer: mlService.tokenize),
+  );
+
+  // Lokasi toko: alamat struk -> API Nominatim (OpenStreetMap) + GPS,
+  // dengan cache riwayat toko di SQLite.
+  final StoreLocationService storeLocationService = StoreLocationService(
+    locator: StoreLocator(client: NominatimClient()),
+    cache: StoreLocationRepository(),
+  );
 
   // ViewModel.
   final AuthViewModel authViewModel = AuthViewModel(
@@ -71,6 +136,10 @@ Future<void> main() async {
     ocrResultRepository: ocrResultRepository,
     imageStorageService: imageStorageService,
   );
+  final ShoppingPlanViewModel shoppingPlanViewModel = ShoppingPlanViewModel(
+    authViewModel: authViewModel,
+    repository: shoppingPlanRepository,
+  );
   final ScanViewModel scanViewModel = ScanViewModel(
     authViewModel: authViewModel,
     ocrService: ocrService,
@@ -81,11 +150,44 @@ Future<void> main() async {
     imageStorageService: imageStorageService,
     imageFormatService: imageFormatService,
     imagePickerService: imagePickerService,
-    onTransactionSaved: dashboardViewModel.loadDashboard,
+    imageEnhancementService: imageEnhancementService,
+    shoppingPlanService: shoppingPlanService,
+    storeLocationService: storeLocationService,
+    onTransactionSaved: () {
+      dashboardViewModel.loadDashboard();
+      unawaited(shoppingPlanViewModel.load());
+      final int? userId = authViewModel.currentUser?.id;
+      if (userId != null) {
+        unawaited(budgetService.checkAndNotify(userId));
+      }
+    },
   );
   final ProfileViewModel profileViewModel = ProfileViewModel(
     authViewModel: authViewModel,
     userRepository: userRepository,
+  );
+  final BudgetViewModel budgetViewModel = BudgetViewModel(
+    authViewModel: authViewModel,
+    budgetRepository: budgetRepository,
+    budgetService: budgetService,
+  );
+  final ManualEntryViewModel manualEntryViewModel = ManualEntryViewModel(
+    authViewModel: authViewModel,
+    transactionRepository: transactionRepository,
+    categoryRepository: categoryRepository,
+    recurringRepository: recurringRepository,
+    budgetService: budgetService,
+  );
+  final CategoryManagementViewModel categoryManagementViewModel =
+      CategoryManagementViewModel(categoryRepository: categoryRepository);
+  final ReminderViewModel reminderViewModel = ReminderViewModel(
+    authViewModel: authViewModel,
+    notifications: notificationService,
+    coordinator: reminderCoordinator,
+  );
+  final DataToolsViewModel dataToolsViewModel = DataToolsViewModel(
+    authViewModel: authViewModel,
+    exportService: exportService,
   );
 
   if (kDebugMode) {
@@ -110,6 +212,22 @@ Future<void> main() async {
     ),
   );
 
+  // Melatih model TF-IDF + Naive Bayes (offline) setelah tampilan pertama muncul,
+  // sehingga aplikasi tidak menunggu pelatihan saat dibuka.
+  unawaited(Future<void>.delayed(
+    const Duration(milliseconds: 700),
+    mlService.initialize,
+  ));
+
+  // Transaksi berulang yang jatuh tempo, cek anggaran, dan jadwal pengingat.
+  final int? openedUserId = authViewModel.currentUser?.id;
+  if (openedUserId != null) {
+    unawaited(Future<void>.delayed(
+      const Duration(milliseconds: 1200),
+      () => reminderCoordinator.onAppOpened(openedUserId),
+    ));
+  }
+
   runApp(
     MultiProvider(
       providers: [
@@ -129,6 +247,7 @@ Future<void> main() async {
         Provider<ImageStorageService>.value(value: imageStorageService),
         Provider<ImageFormatService>.value(value: imageFormatService),
         Provider<ImagePickerService>.value(value: imagePickerService),
+        Provider<StoreLocationService>.value(value: storeLocationService),
         // ViewModel (state management).
         ChangeNotifierProvider<AuthViewModel>.value(value: authViewModel),
         ChangeNotifierProvider<DashboardViewModel>.value(
@@ -136,6 +255,22 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<ScanViewModel>.value(value: scanViewModel),
         ChangeNotifierProvider<ProfileViewModel>.value(value: profileViewModel),
+        ChangeNotifierProvider<BudgetViewModel>.value(value: budgetViewModel),
+        ChangeNotifierProvider<ShoppingPlanViewModel>.value(
+          value: shoppingPlanViewModel,
+        ),
+        ChangeNotifierProvider<ManualEntryViewModel>.value(
+          value: manualEntryViewModel,
+        ),
+        ChangeNotifierProvider<CategoryManagementViewModel>.value(
+          value: categoryManagementViewModel,
+        ),
+        ChangeNotifierProvider<ReminderViewModel>.value(
+          value: reminderViewModel,
+        ),
+        ChangeNotifierProvider<DataToolsViewModel>.value(
+          value: dataToolsViewModel,
+        ),
       ],
       child: const SmartReceiptApp(),
     ),

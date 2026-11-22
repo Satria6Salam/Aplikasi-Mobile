@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:latlong2/latlong.dart';
 
+import '../core/constants/category_names.dart';
 import '../core/constants/db_constants.dart';
 import '../data/models/category_model.dart';
 import '../data/models/ml_classification_model.dart';
@@ -12,6 +14,7 @@ import '../data/models/transaction_item_model.dart';
 import '../data/models/transaction_model.dart';
 import '../data/repositories/category_repository.dart';
 import '../data/repositories/transaction_repository.dart';
+import '../services/image_enhancement_service.dart';
 import '../services/image_format_service.dart';
 import '../services/image_picker_service.dart';
 import '../services/image_storage_service.dart';
@@ -19,14 +22,27 @@ import '../services/ml_service.dart';
 import '../services/ml_training_data.dart';
 import '../services/ocr_service.dart';
 import '../services/parsing_service.dart';
+import '../services/receipt_selector.dart';
+import '../services/shopping_plan_service.dart';
+import '../services/store_location_service.dart';
 import 'auth_viewmodel.dart';
 import 'safe_change_notifier.dart';
 
 export '../services/image_picker_service.dart' show ScanSource;
+export '../services/store_location_service.dart'
+    show
+        LocationPrecision,
+        LocationPrecisionLabel,
+        LocationSource,
+        StoreAddress,
+        StoreLocation;
 
 /// Tahapan alur pemindaian.
 /// idle -> processing -> ready -> saving -> saved (atau error pada tahap mana pun).
 enum ScanStatus { idle, processing, ready, saving, saved, error }
+
+/// Tahapan pencarian lokasi toko pada pratinjau.
+enum LocationLookupStatus { idle, searching, found, notFound, failed }
 
 /// Satu barang pada pratinjau; nilainya dapat disunting pengguna.
 class DraftItem {
@@ -93,7 +109,33 @@ class ScanDraft {
     required this.initialTotal,
     required this.initialItemsSignature,
     this.notes = '',
-  });
+    this.qualityNotes = const <String>[],
+    this.usedEnhancedImage = false,
+    this.extractedAddress = StoreAddress.empty,
+    String? storeAddress,
+    String? storeBranch,
+  })  : storeAddress = storeAddress ?? extractedAddress.fullAddress,
+        storeBranch = storeBranch ?? extractedAddress.branchName ?? '';
+
+  /// Alamat toko asli hasil ekstraksi struk (tidak berubah).
+  final StoreAddress extractedAddress;
+
+  /// Alamat dan cabang yang dapat disunting pengguna.
+  String storeAddress;
+  String storeBranch;
+
+  /// Titik toko terpilih (null bila belum/tidak ditemukan).
+  StoreLocation? location;
+  LocationLookupStatus locationStatus = LocationLookupStatus.idle;
+
+  /// Keterangan untuk pengguna (mis. alasan lokasi tidak ditemukan).
+  String? locationMessage;
+
+  /// Kekurangan foto yang terdeteksi (mis. "tulisan pudar"); kosong bila baik.
+  final List<String> qualityNotes;
+
+  /// True bila hasil dibaca dari foto yang sudah diperjelas otomatis.
+  final bool usedEnhancedImage;
 
   final String imagePath;
   final ScanSource source;
@@ -133,8 +175,16 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
     required ImageStorageService imageStorageService,
     required ImageFormatService imageFormatService,
     required ImagePickerService imagePickerService,
+    ImageEnhancementService? imageEnhancementService,
+    ReceiptSelector receiptSelector = const ReceiptSelector(),
+    ShoppingPlanService? shoppingPlanService,
+    StoreLocationService? storeLocationService,
     this.onTransactionSaved,
   })  : _auth = authViewModel,
+        _locationService = storeLocationService,
+        _planService = shoppingPlanService,
+        _enhancementService = imageEnhancementService,
+        _selector = receiptSelector,
         _ocrService = ocrService,
         _parsingService = parsingService,
         _mlService = mlService,
@@ -162,8 +212,23 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
   final CategoryRepository _categoryRepository;
   final TransactionRepository _transactionRepository;
   final ImageStorageService _imageStorageService;
+  final ImageEnhancementService? _enhancementService;
+  final ReceiptSelector _selector;
   final ImageFormatService _imageFormatService;
   final ImagePickerService _pickerService;
+  final ShoppingPlanService? _planService;
+  final StoreLocationService? _locationService;
+
+  /// Penanda permintaan lokasi terbaru; hasil permintaan lama diabaikan.
+  int _locationToken = 0;
+
+  /// True bila fitur lokasi toko tersedia (layanan terpasang).
+  bool get locationEnabled => _locationService != null;
+
+  List<String> _lastPlanMatches = const <String>[];
+
+  /// Nama barang rencana belanja yang tercoret oleh struk terakhir yang disimpan.
+  List<String> get lastPlanMatches => _lastPlanMatches;
 
   /// Dipanggil setelah transaksi tersimpan (misalnya untuk memuat ulang Dasbor).
   final VoidCallback? onTransactionSaved;
@@ -249,19 +314,20 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
     safeNotify();
   }
 
+  /// Memuat ulang kategori tiap kali dibutuhkan agar perubahan dari layar
+  /// Kelola Kategori langsung terbaca. Kategori tersembunyi tidak dipakai.
   Future<void> _ensureCategories() async {
-    if (_categories.isEmpty) {
-      final List<CategoryModel> loaded =
-          List<CategoryModel>.of(await _categoryRepository.getAll());
-      // "Lainnya" selalu di urutan terakhir agar mudah dicari.
-      loaded.sort((CategoryModel a, CategoryModel b) {
-        final int ra = a.name == MlService.fallbackCategory ? 1 : 0;
-        final int rb = b.name == MlService.fallbackCategory ? 1 : 0;
-        if (ra != rb) return ra.compareTo(rb);
-        return (a.id ?? 0).compareTo(b.id ?? 0);
-      });
-      _categories = loaded;
-    }
+    final List<CategoryModel> loaded = List<CategoryModel>.of(
+      (await _categoryRepository.getAll())
+          .where((CategoryModel c) => !c.isHidden),
+    );
+    // "Lainnya" selalu di urutan terakhir agar mudah dicari.
+    loaded.sort((CategoryModel a, CategoryModel b) {
+      final int byRank =
+          CategoryNames.rank(a.name).compareTo(CategoryNames.rank(b.name));
+      return byRank != 0 ? byRank : (a.id ?? 0).compareTo(b.id ?? 0);
+    });
+    _categories = loaded;
   }
 
   // ------------------------------------------------------ ambil & proses
@@ -304,14 +370,52 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
       final String preparedPath = await _imageFormatService.prepare(imagePath);
 
       await _setProgress('Membaca teks struk...');
-      final OcrResult ocr = await _ocrService.recognizeFromFile(preparedPath);
-      if (!ocr.isReadable) {
+      final OcrResult firstOcr =
+          await _ocrService.recognizeFromFile(preparedPath);
+      ReceiptReading reading = ReceiptReading(
+        rawText: firstOcr.rawText,
+        parsed: _parsingService.parse(firstOcr.rawText),
+      );
+      bool readable = firstOcr.isReadable;
+      List<String> qualityNotes = const <String>[];
+
+      // Hasil belum lengkap atau angkanya tidak cocok: perjelas foto
+      // (ratakan cahaya, pertegas tulisan pudar), baca ulang, lalu pilih
+      // hasil yang lebih baik.
+      final ImageEnhancementService? enhancer = _enhancementService;
+      if (enhancer != null &&
+          !(readable && _selector.isComplete(reading.parsed))) {
+        await _setProgress('Memperjelas foto struk...');
+        final EnhancedImage? enhanced = await enhancer.enhance(preparedPath);
+        if (enhanced != null) {
+          qualityNotes = enhanced.quality.notes;
+          try {
+            final OcrResult secondOcr =
+                await _ocrService.recognizeFromFile(enhanced.path);
+            if (secondOcr.isReadable) {
+              final ReceiptReading second = ReceiptReading(
+                rawText: secondOcr.rawText,
+                parsed: _parsingService.parse(secondOcr.rawText),
+                fromEnhancedImage: true,
+              );
+              reading = readable ? _selector.choose(reading, second) : second;
+              readable = true;
+            }
+          } on OcrException {
+            // Bacaan kedua gagal: tetap pakai hasil dari foto asli.
+          } finally {
+            await enhancer.discard(enhanced);
+          }
+        }
+      }
+
+      if (!readable) {
         _setError(unreadableMessage);
         return;
       }
 
       await _setProgress('Mengekstrak data transaksi...');
-      final ParsedReceiptData parsed = _parsingService.parse(ocr.rawText);
+      final ParsedReceiptData parsed = reading.parsed;
 
       await _setProgress('Mengklasifikasikan setiap barang...');
       await _mlService.initialize();
@@ -372,7 +476,7 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
       _draft = ScanDraft(
         imagePath: preparedPath,
         source: source,
-        rawText: ocr.rawText,
+        rawText: reading.rawText,
         parsed: parsed,
         classification: receiptLevel,
         aiCategoryId: receiptCategory?.id,
@@ -384,10 +488,15 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
         initialDate: parsed.transactionDate,
         initialTotal: initialTotal,
         initialItemsSignature: _signature(items),
+        qualityNotes: qualityNotes,
+        usedEnhancedImage: reading.fromEnhancedImage,
+        extractedAddress: parsed.address,
       );
       _status = ScanStatus.ready;
       _progressMessage = null;
       safeNotify();
+      // Lokasi dicari di latar belakang agar pratinjau langsung tampil.
+      unawaited(_lookupLocation(fromReceipt: true));
     } on ImageFormatException catch (e) {
       _setError(e.message);
     } on OcrException catch (e) {
@@ -463,6 +572,213 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
 
   void _clearFieldError(String field) {
     if (_formErrors.remove(field) != null) safeNotify();
+  }
+
+  // ---------------------------------------------------------- lokasi toko
+
+  /// Struk dianggap difoto di toko bila dari kamera pada hari transaksi;
+  /// hanya saat itu posisi GPS dipakai untuk menyaring hasil pencarian.
+  bool _gpsRepresentsStore(ScanDraft draft) {
+    if (draft.source != ScanSource.camera) return false;
+    final DateTime? date = draft.transactionDate;
+    if (date == null) return true;
+    final DateTime now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
+  }
+
+  /// Nama toko untuk pencarian; cabang ditambahkan agar lebih spesifik
+  /// (mis. "Indomaret Urek Urek").
+  String _searchName(ScanDraft draft) {
+    final String merchant = draft.merchantName.trim();
+    final String branch = draft.storeBranch.trim();
+    if (branch.isEmpty ||
+        merchant.toLowerCase().contains(branch.toLowerCase())) {
+      return merchant;
+    }
+    return '$merchant $branch';
+  }
+
+  /// Mencari lokasi toko. [fromReceipt] true memakai alamat asli struk
+  /// (dan riwayat cache); false memakai alamat yang sudah disunting.
+  Future<void> _lookupLocation({required bool fromReceipt}) async {
+    final ScanDraft? draft = _draft;
+    final StoreLocationService? service = _locationService;
+    final int? userId = _auth.currentUser?.id;
+    if (draft == null || service == null || userId == null) return;
+
+    final int token = ++_locationToken;
+    StoreAddress address = fromReceipt
+        ? draft.extractedAddress
+        : service.parseAddress(draft.storeAddress,
+            merchantName: draft.merchantName);
+    final String branch = draft.storeBranch.trim();
+    if (address.isNotEmpty && branch.isNotEmpty) {
+      address = address.copyWith(branchName: branch);
+    }
+    final bool useGps = _gpsRepresentsStore(draft);
+
+    if (address.isEmpty && !useGps) {
+      draft
+        ..location = fromReceipt ? null : draft.location
+        ..locationStatus = LocationLookupStatus.notFound
+        ..locationMessage = draft.storeAddress.trim().isEmpty
+            ? 'Alamat toko tidak tercantum di struk. Isi alamat, pakai lokasi Anda, atau atur titik di peta.'
+            : 'Alamat belum cukup lengkap untuk dicari. Tambahkan nama jalan, kecamatan, atau kota.';
+      safeNotify();
+      return;
+    }
+
+    draft
+      ..locationStatus = LocationLookupStatus.searching
+      ..locationMessage = null;
+    safeNotify();
+
+    try {
+      final StoreLocation? found = await service.lookup(
+        userId: userId,
+        merchantName: draft.merchantName.trim(),
+        address: address,
+        cacheAddress: fromReceipt && draft.extractedAddress.isNotEmpty
+            ? draft.extractedAddress.fullAddress
+            : null,
+        useGps: useGps,
+      );
+      if (token != _locationToken || !identical(draft, _draft)) return;
+      draft.location = found;
+      if (found == null) {
+        draft
+          ..locationStatus = LocationLookupStatus.notFound
+          ..locationMessage =
+              'Lokasi tidak ditemukan di peta. Periksa ejaan alamat atau atur titik secara manual.';
+      } else {
+        draft
+          ..locationStatus = LocationLookupStatus.found
+          ..locationMessage = found.isAccurate
+              ? null
+              : 'Lokasi masih perkiraan (${found.precision.label}). Geser pin bila kurang tepat.';
+      }
+    } on GeocodingException catch (e) {
+      if (token != _locationToken || !identical(draft, _draft)) return;
+      draft
+        ..locationStatus = LocationLookupStatus.failed
+        ..locationMessage = e.message;
+    } catch (_) {
+      if (token != _locationToken || !identical(draft, _draft)) return;
+      draft
+        ..locationStatus = LocationLookupStatus.failed
+        ..locationMessage = 'Gagal mencari lokasi toko. Silakan coba lagi.';
+    }
+    safeNotify();
+  }
+
+  void updateStoreAddress(String value) {
+    _draft?.storeAddress = value;
+  }
+
+  void updateStoreBranch(String value) {
+    _draft?.storeBranch = value;
+  }
+
+  /// Nama toko + cabang yang dipakai untuk pencarian (ditampilkan di UI).
+  String get locationSearchName {
+    final ScanDraft? draft = _draft;
+    return draft == null ? '' : _searchName(draft);
+  }
+
+  /// Mencari ulang lokasi dari alamat yang sudah disunting pengguna.
+  Future<void> searchLocation() => _lookupLocation(fromReceipt: false);
+
+  /// Memakai posisi GPS perangkat sebagai lokasi toko.
+  Future<void> useCurrentLocation() async {
+    final ScanDraft? draft = _draft;
+    final StoreLocationService? service = _locationService;
+    if (draft == null || service == null) return;
+
+    final int token = ++_locationToken;
+    final LocationLookupStatus previous = draft.locationStatus;
+    draft
+      ..locationStatus = LocationLookupStatus.searching
+      ..locationMessage = 'Membaca posisi GPS...';
+    safeNotify();
+
+    final DeviceLocationResult result = await service.currentPosition();
+    if (token != _locationToken || !identical(draft, _draft)) return;
+    final DevicePosition? position = result.position;
+    if (position == null) {
+      draft
+        ..locationStatus = draft.location == null
+            ? (previous == LocationLookupStatus.found
+                ? LocationLookupStatus.notFound
+                : LocationLookupStatus.failed)
+            : LocationLookupStatus.found
+        ..locationMessage = result.message;
+      safeNotify();
+      return;
+    }
+    await _applyManualPoint(draft, token, position.point,
+        source: LocationSource.gps,
+        confidence: position.accuracyMeters <= 50 ? 0.85 : 0.65);
+  }
+
+  /// Titik yang dipilih/digeser pengguna di peta.
+  Future<void> setManualLocation(LatLng point) async {
+    final ScanDraft? draft = _draft;
+    if (draft == null || _locationService == null) return;
+    final int token = ++_locationToken;
+    await _applyManualPoint(draft, token, point,
+        source: LocationSource.manual, confidence: 0.95);
+  }
+
+  Future<void> _applyManualPoint(
+    ScanDraft draft,
+    int token,
+    LatLng point, {
+    required String source,
+    required double confidence,
+  }) async {
+    draft
+      ..location = StoreLocation(
+        point: point,
+        displayName: draft.location?.displayName ?? '',
+        precision: LocationPrecision.store,
+        confidence: confidence,
+        source: source,
+      )
+      ..locationStatus = LocationLookupStatus.found
+      ..locationMessage = null;
+    safeNotify();
+
+    // Lengkapi keterangan alamat menurut peta (tidak wajib berhasil).
+    final String? described = await _locationService?.describe(point);
+    if (token != _locationToken || !identical(draft, _draft)) return;
+    final StoreLocation? current = draft.location;
+    if (current != null && described != null) {
+      draft.location = current.copyWith(displayName: described);
+      if (draft.storeAddress.trim().isEmpty) {
+        draft.storeAddress = shortAddress(described);
+      }
+      safeNotify();
+    }
+  }
+
+  /// Alamat versi peta tanpa nama negara.
+  static String shortAddress(String displayName) => displayName
+      .split(',')
+      .map((String s) => s.trim())
+      .where((String s) => s.isNotEmpty && s != 'Indonesia')
+      .join(', ');
+
+  void clearLocation() {
+    final ScanDraft? draft = _draft;
+    if (draft == null) return;
+    _locationToken++;
+    draft
+      ..location = null
+      ..locationStatus = LocationLookupStatus.idle
+      ..locationMessage = null;
+    safeNotify();
   }
 
   // ---------------------------------------------------------- edit barang
@@ -669,6 +985,9 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
           )
           .toList();
       final String notes = draft.notes.trim();
+      final String address = draft.storeAddress.trim();
+      final String branch = draft.storeBranch.trim();
+      final StoreLocation? location = draft.location;
       final TransactionModel transaction = TransactionModel(
         userId: userId,
         merchantName: draft.merchantName.trim(),
@@ -679,9 +998,16 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
         notes: notes.isEmpty ? null : notes,
         createdAt: now,
         updatedAt: now,
+        storeBranch: branch.isEmpty ? null : branch,
+        storeAddress: address.isEmpty ? null : address,
+        latitude: location?.point.latitude,
+        longitude: location?.point.longitude,
+        locationPrecision: location?.precision.name,
+        locationSource: location?.source,
       );
 
-      await _transactionRepository.saveScanTransaction(
+      final TransactionModel saved =
+          await _transactionRepository.saveScanTransaction(
         ocr: ocr,
         parsed: parsed,
         classification: classification,
@@ -690,6 +1016,15 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
         items: items,
       );
 
+      if (location != null && draft.extractedAddress.isNotEmpty) {
+        await _locationService?.remember(
+          userId: userId,
+          merchantName: draft.merchantName.trim(),
+          address: draft.extractedAddress.fullAddress,
+          location: location,
+        );
+      }
+      _lastPlanMatches = await _markPlannedItems(userId, saved, items);
       _draft = null;
       _formErrors.clear();
       _status = ScanStatus.saved;
@@ -705,6 +1040,35 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
       _errorMessage = 'Gagal menyimpan transaksi. Silakan coba lagi.';
       safeNotify();
       return false;
+    }
+  }
+
+  /// Mencoret rencana belanja yang cocok dengan barang pada struk.
+  /// Kegagalan di sini tidak membatalkan transaksi yang sudah tersimpan.
+  Future<List<String>> _markPlannedItems(
+    int userId,
+    TransactionModel saved,
+    List<TransactionItemModel> items,
+  ) async {
+    final ShoppingPlanService? service = _planService;
+    if (service == null || items.isEmpty) return const <String>[];
+    try {
+      final List<PlanMatch> matches = await service.markPurchasedFromReceipt(
+        userId: userId,
+        transactionId: saved.id,
+        purchasedAt: saved.transactionDate,
+        lines: <PurchasedLine>[
+          for (final TransactionItemModel item in items)
+            PurchasedLine(
+              name: item.name,
+              quantity: item.quantity,
+              totalPrice: item.totalPrice,
+            ),
+        ],
+      );
+      return matches.map((PlanMatch m) => m.plan.name).toList();
+    } catch (_) {
+      return const <String>[];
     }
   }
 
@@ -782,6 +1146,7 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
   void cancel() => reset();
 
   void reset() {
+    _locationToken++;
     _status = ScanStatus.idle;
     _errorMessage = null;
     _progressMessage = null;

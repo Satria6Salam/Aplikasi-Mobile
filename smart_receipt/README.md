@@ -21,6 +21,7 @@ Aplikasi Android (Flutter) yang memindai foto struk belanja, membaca teksnya sec
 10. [Struktur Folder](#10-struktur-folder)
 11. [Teknologi](#11-teknologi)
 12. [Keterbatasan](#12-keterbatasan)
+13. [Tim Pengembang](#13-tim-pengembang)
 
 ---
 
@@ -273,4 +274,10 @@ Algoritma klasifikasi (TF-IDF dan Multinomial Naive Bayes), parsing struk, dan a
 - Diuji pada Android; iOS belum diuji.
 - Data tersimpan **lokal di perangkat**; belum ada pencadangan atau sinkronisasi.
 
+## 13. Tim Pengembang
+**Kelas D, Kelompok 5**
+- Satria Badrus Salam (240605110201)
+- Muh. Reza Zulfikar (240605110196)
+- Dian Febrian Nur C. (240605110189)
 
+Dosen Pengampu: **Supriyono, M.Kom**

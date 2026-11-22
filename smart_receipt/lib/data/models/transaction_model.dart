@@ -18,7 +18,29 @@ class TransactionModel {
     required this.createdAt,
     required this.updatedAt,
     this.categoryName,
+    this.storeBranch,
+    this.storeAddress,
+    this.latitude,
+    this.longitude,
+    this.locationPrecision,
+    this.locationSource,
   });
+
+  /// Nama cabang toko (mis. "Urek Urek"); null bila tidak tercantum.
+  final String? storeBranch;
+
+  /// Alamat toko yang sudah divalidasi pengguna.
+  final String? storeAddress;
+  final double? latitude;
+  final double? longitude;
+
+  /// Nama enum `LocationPrecision` (store, street, district, ...).
+  final String? locationPrecision;
+
+  /// Lihat `LocationSource` (receipt, nearby, gps, manual, cache).
+  final String? locationSource;
+
+  bool get hasLocation => latitude != null && longitude != null;
 
   final int? id;
   final int userId;
@@ -55,6 +77,12 @@ class TransactionModel {
       createdAt: DbDateUtils.parseOrNow(map[TransCols.createdAt]),
       updatedAt: DbDateUtils.parseOrNow(map[TransCols.updatedAt]),
       categoryName: map[CategoryCols.name] as String?,
+      storeBranch: map[TransCols.storeBranch] as String?,
+      storeAddress: map[TransCols.storeAddress] as String?,
+      latitude: (map[TransCols.latitude] as num?)?.toDouble(),
+      longitude: (map[TransCols.longitude] as num?)?.toDouble(),
+      locationPrecision: map[TransCols.locationPrecision] as String?,
+      locationSource: map[TransCols.locationSource] as String?,
     );
   }
 
@@ -73,6 +101,12 @@ class TransactionModel {
       TransCols.notes: notes,
       TransCols.createdAt: DbDateUtils.dateTimeToDb(createdAt),
       TransCols.updatedAt: DbDateUtils.dateTimeToDb(updatedAt),
+      TransCols.storeBranch: storeBranch,
+      TransCols.storeAddress: storeAddress,
+      TransCols.latitude: latitude,
+      TransCols.longitude: longitude,
+      TransCols.locationPrecision: locationPrecision,
+      TransCols.locationSource: locationSource,
     };
   }
 
@@ -91,6 +125,12 @@ class TransactionModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? categoryName,
+    String? storeBranch,
+    String? storeAddress,
+    double? latitude,
+    double? longitude,
+    String? locationPrecision,
+    String? locationSource,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -107,6 +147,12 @@ class TransactionModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       categoryName: categoryName ?? this.categoryName,
+      storeBranch: storeBranch ?? this.storeBranch,
+      storeAddress: storeAddress ?? this.storeAddress,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      locationPrecision: locationPrecision ?? this.locationPrecision,
+      locationSource: locationSource ?? this.locationSource,
     );
   }
 }

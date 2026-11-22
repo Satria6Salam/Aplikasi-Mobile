@@ -20,6 +20,7 @@ import '../widgets/item_editor_sheet.dart';
 import '../widgets/message_banner.dart';
 import '../widgets/raw_text_section.dart';
 import '../widgets/receipt_image_card.dart';
+import '../widgets/store_location_card.dart';
 
 /// Form Pratinjau & Validasi (UC-04): pengguna memeriksa dan menyunting hasil
 /// OCR + AI (merchant, tanggal, total, serta nama, harga, dan kategori tiap barang)
@@ -57,6 +58,15 @@ class _PreviewScreenState extends State<PreviewScreen> {
     super.dispose();
   }
 
+  String _qualityMessage(ScanDraft draft) {
+    final String issues = draft.qualityNotes.isEmpty
+        ? 'Foto kurang jelas'
+        : 'Foto kurang jelas (${draft.qualityNotes.join(', ')})';
+    return draft.usedEnhancedImage
+        ? '$issues. Foto sudah diperjelas otomatis sebelum dibaca; mohon periksa kembali nama barang dan harganya.'
+        : '$issues. Mohon periksa kembali nama barang dan harganya, atau foto ulang di tempat yang lebih terang.';
+  }
+
   void _useItemsTotal(ScanViewModel scan) {
     scan.useItemsTotal();
     final double? total = scan.draft?.totalAmount;
@@ -68,11 +78,26 @@ class _PreviewScreenState extends State<PreviewScreen> {
     final ScanViewModel scan = context.read<ScanViewModel>();
     FocusScope.of(context).unfocus();
 
+    final GoRouter router = GoRouter.of(context);
     final bool ok = await scan.saveTransaction();
     if (!mounted || !ok) return;
 
+    final List<String> planned = scan.lastPlanMatches;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Transaksi berhasil disimpan')),
+      SnackBar(
+        content: Text(
+          planned.isEmpty
+              ? 'Transaksi berhasil disimpan'
+              : 'Transaksi tersimpan. ${planned.length} barang rencana '
+                  'sudah dibeli: ${planned.join(', ')}',
+        ),
+        action: planned.isEmpty
+            ? null
+            : SnackBarAction(
+                label: 'Lihat',
+                onPressed: () => router.push(AppRoutes.shoppingPlan),
+              ),
+      ),
     );
     context.go(AppRoutes.dashboard);
   }
@@ -162,6 +187,14 @@ class _PreviewScreenState extends State<PreviewScreen> {
                         ? BannerType.success
                         : BannerType.warning,
                   ),
+                  if (draft.qualityNotes.isNotEmpty ||
+                      draft.usedEnhancedImage) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    MessageBanner(
+                      message: _qualityMessage(draft),
+                      type: BannerType.warning,
+                    ),
+                  ],
                   if (saveError != null) ...[
                     const SizedBox(height: AppSpacing.md),
                     MessageBanner(message: saveError),
@@ -228,6 +261,11 @@ class _PreviewScreenState extends State<PreviewScreen> {
                         ],
                       ),
                     ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  const FadeSlideIn(
+                    delay: Duration(milliseconds: 120),
+                    child: StoreLocationCard(),
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   GroupedItemsSection(

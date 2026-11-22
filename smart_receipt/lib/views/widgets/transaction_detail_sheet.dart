@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_colors.dart';
@@ -12,6 +13,8 @@ import '../../viewmodels/dashboard_viewmodel.dart';
 import 'category_badge.dart';
 import 'confirm_dialog.dart';
 import 'custom_button.dart';
+import 'store_map.dart';
+import '../../services/geocoding_service.dart' show LocationSource;
 
 /// Menampilkan rincian transaksi pada lembar bawah: data struk, barang yang
 /// dibeli per kategori, dan tombol hapus.
@@ -88,6 +91,10 @@ class _TransactionDetailSheetState extends State<_TransactionDetailSheet> {
     final TransactionModel t = widget.transaction;
     final String categoryName = t.categoryName ?? 'Lainnya';
     final String? notes = t.notes;
+    final String? address = t.storeAddress;
+    final String? branch = t.storeBranch;
+    final double? lat = t.latitude;
+    final double? lng = t.longitude;
 
     return Container(
       constraints: BoxConstraints(
@@ -166,6 +173,26 @@ class _TransactionDetailSheetState extends State<_TransactionDetailSheet> {
                   style: textTheme.bodyMedium,
                 ),
               ),
+              if (branch != null && branch.isNotEmpty)
+                _DetailRow(
+                  label: 'Cabang',
+                  child: Text(branch, style: textTheme.bodyMedium),
+                ),
+              if (address != null && address.isNotEmpty)
+                _DetailRow(
+                  label: 'Alamat toko',
+                  child: Text(address, style: textTheme.bodyMedium),
+                ),
+              if (lat != null && lng != null) ...[
+                const SizedBox(height: AppSpacing.xs),
+                StoreMapPreview(point: LatLng(lat, lng), height: 150),
+                const SizedBox(height: 6),
+                Text(
+                  'Titik lokasi: ${LocationSource.label(t.locationSource ?? '')}',
+                  style: textTheme.bodySmall,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+              ],
               if (notes != null && notes.isNotEmpty)
                 _DetailRow(
                   label: 'Catatan',
