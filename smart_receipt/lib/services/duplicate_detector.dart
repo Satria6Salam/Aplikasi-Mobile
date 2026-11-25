@@ -8,7 +8,16 @@ class DuplicateMatch {
     required this.transaction,
     required this.confidence,
     required this.reasons,
+    this.hasItems = false,
   });
+
+  /// True bila transaksi lama itu sudah punya rincian barang.
+  final bool hasItems;
+
+  /// True bila transaksi lama berasal dari Scan QRIS dan belum punya rincian
+  /// barang: struk yang baru dipindai dapat MELENGKAPINYA, bukan membuat
+  /// transaksi ganda.
+  bool get canAttachReceipt => transaction.isQris && !hasItems;
 
   final TransactionModel transaction;
 
@@ -52,11 +61,13 @@ class DuplicateDetector {
       final bool merchantOk = merchantsSimilar(merchantName, t.merchantName);
 
       double overlap = 0;
+      bool hasItems = false;
       final int? id = t.id;
       if (id != null && itemNames.isNotEmpty) {
         try {
           final List<TransactionItemModel> stored =
               await _repository.getItems(id);
+          hasItems = stored.isNotEmpty;
           overlap = itemOverlap(
             itemNames,
             stored.map((TransactionItemModel i) => i.name).toList(),
@@ -77,6 +88,7 @@ class DuplicateDetector {
       matches.add(
         DuplicateMatch(
           transaction: t,
+          hasItems: hasItems,
           confidence: double.parse(confidence.toStringAsFixed(2)),
           reasons: <String>[
             if (merchantOk) 'Toko sama',

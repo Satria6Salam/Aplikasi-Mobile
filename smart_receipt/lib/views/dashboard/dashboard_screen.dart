@@ -24,6 +24,7 @@ import '../widgets/insight_card.dart';
 import '../widgets/message_banner.dart';
 import '../widgets/period_search_sheet.dart';
 import '../widgets/period_selector.dart';
+import '../widgets/qris_pending_banner.dart';
 import '../widgets/quick_actions.dart';
 import '../widgets/summary_card.dart';
 import '../widgets/theme_illustrations.dart';
@@ -156,6 +157,11 @@ class DashboardScreen extends StatelessWidget {
                               onTap: () => context.push(AppRoutes.scan),
                             ),
                             QuickAction(
+                              icon: AppIcons.qrCode,
+                              label: 'Scan QRIS',
+                              onTap: () => context.push(AppRoutes.qris),
+                            ),
+                            QuickAction(
                               icon: AppIcons.penLine,
                               label: 'Catat Manual',
                               onTap: () => context.push(AppRoutes.manualEntry),
@@ -165,14 +171,10 @@ class DashboardScreen extends StatelessWidget {
                               label: 'Pemasukan',
                               onTap: () => context.push(AppRoutes.incomes),
                             ),
-                            QuickAction(
-                              icon: AppIcons.piggyBank,
-                              label: 'Anggaran',
-                              onTap: () => context.push(AppRoutes.budget),
-                            ),
                           ],
                         ),
                       ),
+                      const QrisPendingBanner(),
                       if (error != null) ...[
                         const SizedBox(height: AppSpacing.md),
                         MessageBanner(

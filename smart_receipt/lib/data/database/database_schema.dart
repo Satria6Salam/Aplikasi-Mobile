@@ -105,6 +105,8 @@ CREATE TABLE ${DbTables.transactions} (
   ${TransCols.longitude} REAL,
   ${TransCols.locationPrecision} TEXT,
   ${TransCols.locationSource} TEXT,
+  ${TransCols.source} TEXT,
+  ${TransCols.merchantId} TEXT,
   FOREIGN KEY (${TransCols.userId}) REFERENCES ${DbTables.users}(${UserCols.id})
     ON DELETE CASCADE,
   FOREIGN KEY (${TransCols.ocrId}) REFERENCES ${DbTables.ocrResults}(${OcrCols.id})
@@ -289,6 +291,35 @@ CREATE TABLE ${DbTables.savingsDeposits} (
     ...createIncomeIndexes,
   ];
 
+  static const String createQrisPending = '''
+CREATE TABLE ${DbTables.qrisPending} (
+  ${QrisPendingCols.id} INTEGER PRIMARY KEY AUTOINCREMENT,
+  ${QrisPendingCols.userId} INTEGER NOT NULL,
+  ${QrisPendingCols.merchantName} TEXT NOT NULL,
+  ${QrisPendingCols.city} TEXT,
+  ${QrisPendingCols.merchantId} TEXT,
+  ${QrisPendingCols.mcc} TEXT,
+  ${QrisPendingCols.categoryId} INTEGER,
+  ${QrisPendingCols.latitude} REAL,
+  ${QrisPendingCols.longitude} REAL,
+  ${QrisPendingCols.locationSource} TEXT,
+  ${QrisPendingCols.notes} TEXT,
+  ${QrisPendingCols.scannedAt} TEXT NOT NULL,
+  FOREIGN KEY (${QrisPendingCols.userId}) REFERENCES ${DbTables.users}(${UserCols.id})
+    ON DELETE CASCADE
+)''';
+
+  static const String createMerchantIdIndex =
+      'CREATE INDEX idx_trans_merchant_id ON ${DbTables.transactions}(${TransCols.userId}, ${TransCols.merchantId})';
+
+  /// Perubahan skema dari versi 8 ke versi 9 (Scan QRIS).
+  static const List<String> upgradeToV9 = <String>[
+    'ALTER TABLE ${DbTables.transactions} ADD COLUMN ${TransCols.source} TEXT',
+    'ALTER TABLE ${DbTables.transactions} ADD COLUMN ${TransCols.merchantId} TEXT',
+    createQrisPending,
+    createMerchantIdIndex,
+  ];
+
   static const String createTransLocationIndex =
       'CREATE INDEX idx_trans_location ON ${DbTables.transactions}(${TransCols.userId}, ${TransCols.latitude})';
 
@@ -328,6 +359,7 @@ CREATE TABLE ${DbTables.savingsDeposits} (
     'CREATE INDEX idx_items_category ON ${DbTables.transactionItems}(${ItemCols.categoryId})',
     createShoppingPlansIndex,
     createTransLocationIndex,
+    createMerchantIdIndex,
     ...createIncomeIndexes,
   ];
 
@@ -356,6 +388,7 @@ CREATE TABLE ${DbTables.savingsDeposits} (
     createRecurringIncomes,
     createSavingsGoals,
     createSavingsDeposits,
+    createQrisPending,
   ];
 
   /// Kategori awal (label kelas Naive Bayes), 15 kategori.

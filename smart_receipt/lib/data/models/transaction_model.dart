@@ -24,7 +24,18 @@ class TransactionModel {
     this.longitude,
     this.locationPrecision,
     this.locationSource,
+    this.source,
+    this.merchantId,
   });
+
+  /// Asal transaksi: `TransactionSource.scan`, `TransactionSource.qris`, atau
+  /// null (catatan manual dan data lama).
+  final String? source;
+
+  /// ID merchant (NMID) dari QRIS; mengenali toko yang sama dengan pasti.
+  final String? merchantId;
+
+  bool get isQris => source == TransactionSource.qris;
 
   /// Nama cabang toko (mis. "Urek Urek"); null bila tidak tercantum.
   final String? storeBranch;
@@ -83,6 +94,8 @@ class TransactionModel {
       longitude: (map[TransCols.longitude] as num?)?.toDouble(),
       locationPrecision: map[TransCols.locationPrecision] as String?,
       locationSource: map[TransCols.locationSource] as String?,
+      source: map[TransCols.source] as String?,
+      merchantId: map[TransCols.merchantId] as String?,
     );
   }
 
@@ -107,6 +120,8 @@ class TransactionModel {
       TransCols.longitude: longitude,
       TransCols.locationPrecision: locationPrecision,
       TransCols.locationSource: locationSource,
+      TransCols.source: source,
+      TransCols.merchantId: merchantId,
     };
   }
 
@@ -131,6 +146,8 @@ class TransactionModel {
     double? longitude,
     String? locationPrecision,
     String? locationSource,
+    String? source,
+    String? merchantId,
   }) {
     return TransactionModel(
       id: id ?? this.id,
@@ -153,6 +170,8 @@ class TransactionModel {
       longitude: longitude ?? this.longitude,
       locationPrecision: locationPrecision ?? this.locationPrecision,
       locationSource: locationSource ?? this.locationSource,
+      source: source ?? this.source,
+      merchantId: merchantId ?? this.merchantId,
     );
   }
 }

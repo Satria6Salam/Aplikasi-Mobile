@@ -12,14 +12,17 @@ import 'package:smart_receipt/data/repositories/savings_repository.dart';
 import 'package:smart_receipt/services/cash_flow_service.dart';
 import 'package:smart_receipt/viewmodels/auth_viewmodel.dart';
 import 'package:smart_receipt/viewmodels/dashboard_viewmodel.dart';
+import 'package:smart_receipt/viewmodels/qris_pending_viewmodel.dart';
 import 'package:smart_receipt/views/dashboard/dashboard_screen.dart';
 import 'package:smart_receipt/views/features/features_screen.dart';
 import 'package:smart_receipt/views/widgets/app_bottom_nav.dart';
 
 import 'helpers/fake_income_savings.dart';
+import 'helpers/fake_qris.dart';
 import 'viewmodels_test.dart'
     show
         FakeImageStorageService,
+        FakeCategoryRepository,
         FakeOcrResultRepository,
         FakeTransactionRepository,
         buildLoggedInAuth;
@@ -31,6 +34,8 @@ Widget routerApp(Widget home, List<String> visited) {
       GoRoute(path: '/', builder: (BuildContext _, GoRouterState __) => home),
       for (final String route in <String>[
         AppRoutes.incomes,
+        AppRoutes.qris,
+        AppRoutes.qrisPending,
         AppRoutes.manualEntry,
         AppRoutes.budget,
         AppRoutes.savings,
@@ -71,6 +76,8 @@ void main() {
         routes,
         <String>{
           AppRoutes.incomes,
+          AppRoutes.qris,
+          AppRoutes.qrisPending,
           AppRoutes.manualEntry,
           AppRoutes.budget,
           AppRoutes.savings,
@@ -112,6 +119,8 @@ void main() {
       expect(find.text('Kelola'), findsOneWidget);
       for (final String title in <String>[
         'Pemasukan',
+        'Scan QRIS',
+        'QRIS Menunggu',
         'Catat Manual',
         'Anggaran',
         'Target Tabungan',
@@ -253,7 +262,15 @@ void main() {
             value: auth,
             child: ChangeNotifierProvider<DashboardViewModel>.value(
               value: dash,
-              child: routerApp(const DashboardScreen(), visited),
+              child: ChangeNotifierProvider<QrisPendingViewModel>.value(
+                value: QrisPendingViewModel(
+                  authViewModel: auth,
+                  pendingRepository: FakeQrisPendingRepository(),
+                  transactionRepository: txRepo,
+                  categoryRepository: FakeCategoryRepository(),
+                ),
+                child: routerApp(const DashboardScreen(), visited),
+              ),
             ),
           ),
         ),
@@ -287,9 +304,9 @@ void main() {
       // Aksi cepat: empat tombol dengan nama yang jelas.
       for (final String label in <String>[
         'Scan Struk',
+        'Scan QRIS',
         'Catat Manual',
         'Pemasukan',
-        'Anggaran',
       ]) {
         expect(find.text(label), findsWidgets, reason: label);
       }

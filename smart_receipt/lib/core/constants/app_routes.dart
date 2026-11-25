@@ -21,6 +21,8 @@ class AppRoutes {
   static const String shoppingPlan = '/shopping-plan';
   static const String storeMap = '/store-map';
   static const String search = '/search';
+  static const String qris = '/qris';
+  static const String qrisPending = '/qris-pending';
   static const String incomes = '/incomes';
   static const String savings = '/savings';
   static const String priceCompare = '/price-compare';

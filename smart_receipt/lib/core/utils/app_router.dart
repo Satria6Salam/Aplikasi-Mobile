@@ -16,6 +16,8 @@ import '../../views/history/history_screen.dart';
 import '../../views/income/income_screen.dart';
 import '../../views/location/store_map_screen.dart';
 import '../../views/price/price_comparison_screen.dart';
+import '../../views/qris/qris_pending_screen.dart';
+import '../../views/qris/qris_scan_screen.dart';
 import '../../views/savings/savings_screen.dart';
 import '../../views/search/search_screen.dart';
 import '../../views/profile/settings_screen.dart';
@@ -176,8 +178,16 @@ class AppRouter {
         // Analisis dibuka dari menu Fitur atau tautan di Beranda.
         GoRoute(
           path: AppRoutes.analysis,
+          pageBuilder: (context, state) => _page(state, const AnalysisScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.qris,
+          pageBuilder: (context, state) => _page(state, const QrisScanScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.qrisPending,
           pageBuilder: (context, state) =>
-              _page(state, const AnalysisScreen()),
+              _page(state, const QrisPendingScreen()),
         ),
         GoRoute(
           path: AppRoutes.incomes,
@@ -200,8 +210,7 @@ class AppRouter {
         ),
         GoRoute(
           path: AppRoutes.storeMap,
-          pageBuilder: (context, state) =>
-              _page(state, const StoreMapScreen()),
+          pageBuilder: (context, state) => _page(state, const StoreMapScreen()),
         ),
         GoRoute(
           path: AppRoutes.dataTools,

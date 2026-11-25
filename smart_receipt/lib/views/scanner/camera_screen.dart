@@ -24,9 +24,15 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
+  late final ScanViewModel _scanVm;
+
+  /// True bila kamera ditutup karena struk berhasil dibaca (menuju pratinjau).
+  bool _toPreview = false;
+
   @override
   void initState() {
     super.initState();
+    _scanVm = context.read<ScanViewModel>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final ScanViewModel scan = context.read<ScanViewModel>();
@@ -40,8 +46,16 @@ class _CameraScreenState extends State<CameraScreen> {
     await scan.pickAndProcess(source);
     if (!mounted) return;
     if (scan.status == ScanStatus.ready) {
+      _toPreview = true;
       context.pushReplacement(AppRoutes.preview);
     }
+  }
+
+  @override
+  void dispose() {
+    // Keluar tanpa memindai: struk berikutnya tidak boleh dikira melengkapi QRIS.
+    if (!_toPreview) _scanVm.clearQrisContext();
+    super.dispose();
   }
 
   @override

@@ -168,6 +168,12 @@ class StoreAddress {
       if (district != null && district != area) {
         add(<String?>['$merchant $district', city], LocationPrecision.store);
       }
+      // Hanya nama toko dan kota (mis. dari QRIS yang tidak memuat alamat).
+      if (city != null &&
+          !queries.any((AddressQuery q) =>
+              q.precision == LocationPrecision.store)) {
+        add(<String?>[merchant, city], LocationPrecision.store);
+      }
     }
     if (street != null) {
       add(<String?>[street, district, city], LocationPrecision.street);

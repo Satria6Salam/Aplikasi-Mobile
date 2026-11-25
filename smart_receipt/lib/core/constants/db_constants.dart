@@ -3,7 +3,7 @@ class DbConstants {
   DbConstants._();
 
   static const String databaseName = 'smartreceipt.db';
-  static const int databaseVersion = 8;
+  static const int databaseVersion = 9;
 }
 
 /// Nama tabel.
@@ -26,6 +26,7 @@ class DbTables {
   static const String recurringIncomes = 'recurring_incomes';
   static const String savingsGoals = 'savings_goals';
   static const String savingsDeposits = 'savings_deposits';
+  static const String qrisPending = 'qris_pending';
 }
 
 /// Kolom tabel users.
@@ -133,6 +134,20 @@ class TransCols {
   static const String longitude = 'longitude';
   static const String locationPrecision = 'location_precision';
   static const String locationSource = 'location_source';
+  // Versi 9: asal transaksi dan ID merchant (NMID) dari QRIS.
+  static const String source = 'source';
+  static const String merchantId = 'merchant_id';
+}
+
+/// Asal sebuah transaksi (kolom `source` pada tabel transactions).
+class TransactionSource {
+  TransactionSource._();
+
+  /// Dari foto struk.
+  static const String scan = 'scan';
+
+  /// Dari pemindaian kode QRIS.
+  static const String qris = 'qris';
 }
 
 /// Kolom tabel store_locations (cache koordinat toko yang pernah dipastikan).
@@ -322,4 +337,24 @@ class DepositCols {
   static const String incomeId = 'income_id';
   static const String notes = 'notes';
   static const String createdAt = 'created_at';
+}
+
+/// Kolom tabel qris_pending: QRIS yang sudah dipindai tetapi nominalnya
+/// belum diketahui (menunggu struk). Bukan transaksi, jadi tidak ikut
+/// hitungan pengeluaran sampai dilengkapi.
+class QrisPendingCols {
+  QrisPendingCols._();
+
+  static const String id = 'pending_id';
+  static const String userId = 'user_id';
+  static const String merchantName = 'merchant_name';
+  static const String city = 'city';
+  static const String merchantId = 'merchant_id';
+  static const String mcc = 'mcc';
+  static const String categoryId = 'category_id';
+  static const String latitude = 'latitude';
+  static const String longitude = 'longitude';
+  static const String locationSource = 'location_source';
+  static const String notes = 'notes';
+  static const String scannedAt = 'scanned_at';
 }

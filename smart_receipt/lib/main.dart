@@ -15,6 +15,7 @@ import 'core/theme/category_palette.dart';
 import 'data/models/category_model.dart';
 import 'data/repositories/budget_repository.dart';
 import 'data/repositories/income_repository.dart';
+import 'data/repositories/qris_pending_repository.dart';
 import 'data/repositories/savings_repository.dart';
 import 'data/repositories/shopping_plan_repository.dart';
 import 'data/repositories/store_location_repository.dart';
@@ -52,6 +53,8 @@ import 'viewmodels/manual_entry_viewmodel.dart';
 import 'viewmodels/reminder_viewmodel.dart';
 import 'viewmodels/dashboard_viewmodel.dart';
 import 'viewmodels/profile_viewmodel.dart';
+import 'viewmodels/qris_pending_viewmodel.dart';
+import 'viewmodels/qris_viewmodel.dart';
 import 'viewmodels/scan_viewmodel.dart';
 
 Future<void> main() async {
@@ -77,6 +80,7 @@ Future<void> main() async {
   final RecurringRepository recurringRepository = RecurringRepository();
   final IncomeRepository incomeRepository = IncomeRepository();
   final SavingsRepository savingsRepository = SavingsRepository();
+  final QrisPendingRepository qrisPendingRepository = QrisPendingRepository();
   final ShoppingPlanRepository shoppingPlanRepository =
       ShoppingPlanRepository();
 
@@ -175,6 +179,7 @@ Future<void> main() async {
     imageEnhancementService: imageEnhancementService,
     shoppingPlanService: shoppingPlanService,
     storeLocationService: storeLocationService,
+    qrisPendingRepository: qrisPendingRepository,
     onTransactionSaved: () {
       dashboardViewModel.loadDashboard();
       unawaited(shoppingPlanViewModel.load());
@@ -183,6 +188,28 @@ Future<void> main() async {
         unawaited(budgetService.checkAndNotify(userId));
       }
     },
+  );
+  // Scan QRIS: membaca kode QR toko, lalu mencatat (atau menunggu struk).
+  final QrisViewModel qrisViewModel = QrisViewModel(
+    authViewModel: authViewModel,
+    transactionRepository: transactionRepository,
+    categoryRepository: categoryRepository,
+    pendingRepository: qrisPendingRepository,
+    storeLocationService: storeLocationService,
+    onSaved: () {
+      dashboardViewModel.loadDashboard();
+      final int? userId = authViewModel.currentUser?.id;
+      if (userId != null) {
+        unawaited(budgetService.checkAndNotify(userId));
+      }
+    },
+  );
+  final QrisPendingViewModel qrisPendingViewModel = QrisPendingViewModel(
+    authViewModel: authViewModel,
+    pendingRepository: qrisPendingRepository,
+    transactionRepository: transactionRepository,
+    categoryRepository: categoryRepository,
+    onChanged: dashboardViewModel.loadDashboard,
   );
   final ProfileViewModel profileViewModel = ProfileViewModel(
     authViewModel: authViewModel,
@@ -280,6 +307,10 @@ Future<void> main() async {
           value: dashboardViewModel,
         ),
         ChangeNotifierProvider<ScanViewModel>.value(value: scanViewModel),
+        ChangeNotifierProvider<QrisViewModel>.value(value: qrisViewModel),
+        ChangeNotifierProvider<QrisPendingViewModel>.value(
+          value: qrisPendingViewModel,
+        ),
         ChangeNotifierProvider<ProfileViewModel>.value(value: profileViewModel),
         ChangeNotifierProvider<BudgetViewModel>.value(value: budgetViewModel),
         ChangeNotifierProvider<ShoppingPlanViewModel>.value(

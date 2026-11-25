@@ -173,6 +173,16 @@ class _TransactionDetailSheetState extends State<_TransactionDetailSheet> {
                   style: textTheme.bodyMedium,
                 ),
               ),
+              if (t.isQris)
+                _DetailRow(
+                  label: 'Sumber',
+                  child: Text(
+                    t.merchantId == null
+                        ? 'Scan QRIS'
+                        : 'Scan QRIS · ${t.merchantId}',
+                    style: textTheme.bodyMedium,
+                  ),
+                ),
               if (branch != null && branch.isNotEmpty)
                 _DetailRow(
                   label: 'Cabang',

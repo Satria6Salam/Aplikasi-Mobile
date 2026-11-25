@@ -68,6 +68,52 @@ class _PreviewScreenState extends State<PreviewScreen> {
         : '$issues. Mohon periksa kembali nama barang dan harganya, atau foto ulang di tempat yang lebih terang.';
   }
 
+  Future<_AttachChoice?> _askAttach(DuplicateMatch match) {
+    return showDialog<_AttachChoice>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Text('Lengkapi transaksi QRIS?'),
+        content: Text(
+          '${_duplicateSummary(match)}\n\n'
+          'Transaksi ini tercatat dari Scan QRIS dan belum punya rincian barang. '
+          'Lengkapi dengan rincian dari struk ini, tanpa membuat transaksi ganda?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Periksa Lagi'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(_AttachChoice.saveNew),
+            child: const Text('Simpan Baru'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.of(dialogContext).pop(_AttachChoice.attach),
+            child: const Text('Lengkapi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _attach(ScanViewModel scan, DuplicateMatch match) async {
+    final GoRouter router = GoRouter.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    final bool ok = await scan.attachToTransaction(match);
+    if (!mounted || !ok) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Transaksi QRIS ${match.transaction.merchantName} dilengkapi dengan '
+          'rincian barang dari struk.',
+        ),
+      ),
+    );
+    router.go(AppRoutes.dashboard);
+  }
+
   /// Daftar kata yang dikoreksi otomatis, singkat dan tidak menakutkan.
   String _correctionsMessage(List<TextCorrection> corrections) {
     final List<String> shown =
@@ -99,15 +145,27 @@ class _PreviewScreenState extends State<PreviewScreen> {
     final List<DuplicateMatch> duplicates = await scan.checkDuplicates();
     if (!mounted) return;
     if (duplicates.isNotEmpty) {
-      final bool proceed = await showConfirmDialog(
-        context,
-        title: 'Struk ini mungkin sudah tercatat',
-        message:
-            '${_duplicateSummary(duplicates.first)}\n\nTetap simpan sebagai transaksi baru?',
-        confirmLabel: 'Tetap Simpan',
-        cancelLabel: 'Periksa Lagi',
-      );
-      if (!proceed || !mounted) return;
+      final DuplicateMatch first = duplicates.first;
+      if (first.canAttachReceipt) {
+        // Transaksi QRIS yang sama sudah tercatat tanpa rincian barang:
+        // tawarkan melengkapinya, bukan membuat transaksi ganda.
+        final _AttachChoice? choice = await _askAttach(first);
+        if (choice == null || !mounted) return;
+        if (choice == _AttachChoice.attach) {
+          await _attach(scan, first);
+          return;
+        }
+      } else {
+        final bool proceed = await showConfirmDialog(
+          context,
+          title: 'Struk ini mungkin sudah tercatat',
+          message:
+              '${_duplicateSummary(first)}\n\nTetap simpan sebagai transaksi baru?',
+          confirmLabel: 'Tetap Simpan',
+          cancelLabel: 'Periksa Lagi',
+        );
+        if (!proceed || !mounted) return;
+      }
     }
 
     final GoRouter router = GoRouter.of(context);
@@ -235,6 +293,14 @@ class _PreviewScreenState extends State<PreviewScreen> {
                       type: BannerType.warning,
                     ),
                   ],
+                  if (scan.qrisContext case final qris?) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    MessageBanner(
+                      message:
+                          'Struk ini akan melengkapi QRIS ${qris.merchantName}. Nama toko dan lokasinya diambil dari QRIS.',
+                      type: BannerType.success,
+                    ),
+                  ],
                   if (draft.parsed.breakdownText(AppFormatters.rupiah)
                       case final String breakdown) ...[
                     const SizedBox(height: AppSpacing.md),
@@ -356,3 +422,6 @@ class _PreviewScreenState extends State<PreviewScreen> {
     );
   }
 }
+
+/// Pilihan pengguna saat struk mirip transaksi QRIS tanpa rincian.
+enum _AttachChoice { attach, saveNew }

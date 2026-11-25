@@ -52,6 +52,20 @@ List<FeatureSection> featureSections() => <FeatureSection>[
             route: AppRoutes.incomes,
           ),
           FeatureSpec(
+            icon: AppIcons.qrCode,
+            color: const Color(0xFF0EA5E9),
+            title: 'Scan QRIS',
+            subtitle: 'Catat pembayaran dari kode QRIS toko',
+            route: AppRoutes.qris,
+          ),
+          FeatureSpec(
+            icon: AppIcons.hourglass,
+            color: const Color(0xFFF59E0B),
+            title: 'QRIS Menunggu',
+            subtitle: 'Lengkapi dengan scan struknya',
+            route: AppRoutes.qrisPending,
+          ),
+          FeatureSpec(
             icon: AppIcons.penLine,
             color: const Color(0xFF3B82F6),
             title: 'Catat Manual',

@@ -88,6 +88,85 @@ INNER JOIN ${DbTables.categories} c ON c.${CategoryCols.id} = t.${TransCols.cate
     });
   }
 
+  /// Melengkapi transaksi yang sudah ada (mis. hasil Scan QRIS) dengan hasil
+  /// scan struknya: jejak OCR, parsing, klasifikasi, serta rincian barang,
+  /// dalam SATU transaksi database. Nama toko, tanggal, total, dan catatan
+  /// transaksi lama tidak diubah; kategori utama mengikuti barang terbesar.
+  /// Cabang, alamat, dan lokasi hanya diisi bila masih kosong, sehingga titik
+  /// yang diambil saat memindai QRIS di toko tetap dipakai.
+  Future<void> completeWithScan({
+    required int transactionId,
+    required OcrResultModel ocr,
+    required ParsedReceiptModel parsed,
+    required MlClassificationModel classification,
+    required List<TfidfFeatureModel> features,
+    required List<TransactionItemModel> items,
+    required int categoryId,
+    String? storeBranch,
+    String? storeAddress,
+  }) async {
+    final Database db = await _db;
+    await db.transaction((Transaction txn) async {
+      final int ocrId = await txn.insert(DbTables.ocrResults, ocr.toMap());
+      final int parsedId = await txn.insert(
+        DbTables.parsedReceipts,
+        parsed.copyWith(ocrId: ocrId).toMap(),
+      );
+      final int classificationId = await txn.insert(
+        DbTables.mlClassifications,
+        classification.copyWith(parsedId: parsedId).toMap(),
+      );
+      for (final TfidfFeatureModel feature in features) {
+        await txn.insert(
+          DbTables.tfidfFeatures,
+          feature.copyWith(classificationId: classificationId).toMap(),
+        );
+      }
+      for (final TransactionItemModel item in items) {
+        await txn.insert(
+          DbTables.transactionItems,
+          item.copyWith(transactionId: transactionId).toMap(),
+        );
+      }
+      await txn.rawUpdate(
+        'UPDATE ${DbTables.transactions} SET '
+        '${TransCols.ocrId} = ?, '
+        '${TransCols.parsedId} = ?, '
+        '${TransCols.classificationId} = ?, '
+        '${TransCols.categoryId} = ?, '
+        '${TransCols.storeBranch} = COALESCE(${TransCols.storeBranch}, ?), '
+        '${TransCols.storeAddress} = COALESCE(${TransCols.storeAddress}, ?), '
+        '${TransCols.updatedAt} = ? '
+        'WHERE ${TransCols.id} = ?',
+        <Object?>[
+          ocrId,
+          parsedId,
+          classificationId,
+          categoryId,
+          storeBranch,
+          storeAddress,
+          DbDateUtils.dateTimeToDb(DateTime.now()),
+          transactionId,
+        ],
+      );
+    });
+  }
+
+  /// Kategori yang terakhir dipakai untuk toko ber-NMID [merchantId]; null
+  /// bila belum pernah. Dipakai agar koreksi kategori pengguna diingat.
+  Future<int?> findCategoryByMerchantId(int userId, String merchantId) async {
+    final Database db = await _db;
+    final List<Map<String, Object?>> rows = await db.query(
+      DbTables.transactions,
+      columns: <String>[TransCols.categoryId],
+      where: '${TransCols.userId} = ? AND ${TransCols.merchantId} = ?',
+      whereArgs: <Object?>[userId, merchantId],
+      orderBy: '${TransCols.transactionDate} DESC, ${TransCols.id} DESC',
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first[TransCols.categoryId] as int?;
+  }
+
   /// Menyimpan transaksi tanpa jejak OCR/AI (misalnya input manual).
   Future<TransactionModel> insert(TransactionModel transaction) async {
     final Database db = await _db;

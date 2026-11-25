@@ -9,10 +9,12 @@ import '../data/models/category_model.dart';
 import '../data/models/ml_classification_model.dart';
 import '../data/models/ocr_result_model.dart';
 import '../data/models/parsed_receipt_model.dart';
+import '../data/models/qris_pending_model.dart';
 import '../data/models/tfidf_feature_model.dart';
 import '../data/models/transaction_item_model.dart';
 import '../data/models/transaction_model.dart';
 import '../data/repositories/category_repository.dart';
+import '../data/repositories/qris_pending_repository.dart';
 import '../data/repositories/transaction_repository.dart';
 import '../services/image_enhancement_service.dart';
 import '../services/image_format_service.dart';
@@ -182,8 +184,10 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
     ReceiptSelector receiptSelector = const ReceiptSelector(),
     ShoppingPlanService? shoppingPlanService,
     StoreLocationService? storeLocationService,
+    QrisPendingRepository? qrisPendingRepository,
     this.onTransactionSaved,
   })  : _auth = authViewModel,
+        _qrisPending = qrisPendingRepository,
         _locationService = storeLocationService,
         _duplicateDetector = DuplicateDetector(transactionRepository),
         _planService = shoppingPlanService,
@@ -222,7 +226,23 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
   final ImagePickerService _pickerService;
   final ShoppingPlanService? _planService;
   final StoreLocationService? _locationService;
+  final QrisPendingRepository? _qrisPending;
   final DuplicateDetector _duplicateDetector;
+
+  // ------------------------------------------------------- QRIS menunggu struk
+
+  QrisPendingModel? _qris;
+
+  /// QRIS menunggu struk yang sedang dilengkapi oleh struk ini; null pada scan
+  /// biasa. Nama toko, ID merchant (NMID), dan titik lokasinya dipakai.
+  QrisPendingModel? get qrisContext => _qris;
+
+  /// Memulai scan struk untuk melengkapi sebuah QRIS yang menunggu.
+  void beginQrisCompletion(QrisPendingModel pending) => _qris = pending;
+
+  /// Membatalkan keterkaitan dengan QRIS (tanpa memberi tahu pendengar, aman
+  /// dipanggil saat layar ditutup).
+  void clearQrisContext() => _qris = null;
 
   List<DuplicateMatch> _duplicates = const <DuplicateMatch>[];
   Timer? _duplicateTimer;
@@ -566,9 +586,28 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
       _status = ScanStatus.ready;
       _progressMessage = null;
       safeNotify();
+      // Struk yang melengkapi QRIS memakai nama toko dan titik lokasi QRIS-nya.
+      final QrisPendingModel? qris = _qris;
+      if (qris != null) {
+        final ScanDraft d = _draft!;
+        d.merchantName = qris.merchantName;
+        if (qris.hasLocation) {
+          d
+            ..location = StoreLocation(
+              point: LatLng(qris.latitude!, qris.longitude!),
+              displayName: qris.merchantName,
+              precision: LocationPrecision.store,
+              confidence: 0.85,
+              source: qris.locationSource ?? LocationSource.gps,
+            )
+            ..locationStatus = LocationLookupStatus.found;
+        }
+      }
       // Lokasi dan pemeriksaan struk ganda berjalan di latar belakang agar
       // pratinjau langsung tampil.
-      unawaited(_lookupLocation(fromReceipt: true));
+      if (!(qris?.hasLocation ?? false)) {
+        unawaited(_lookupLocation(fromReceipt: true));
+      }
       unawaited(checkDuplicates());
     } on ImageFormatException catch (e) {
       _setError(e.message);
@@ -1006,60 +1045,13 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
           await _imageStorageService.persistImage(draft.imagePath);
       final DateTime now = DateTime.now();
 
-      final OcrResultModel ocr = OcrResultModel(
-        userId: userId,
-        imagePath: storedImagePath,
-        rawText: draft.rawText,
-        ocrSource: draft.source.dbValue,
-        ocrStatus: OcrStatus.success,
-        createdAt: now,
-      );
-      final ParsedReceiptModel parsed = ParsedReceiptModel(
-        ocrId: 0, // Diisi repository setelah OCR tersimpan.
-        merchantName: draft.parsed.merchantName,
-        transactionDate: draft.parsed.transactionDate,
-        totalAmount: draft.parsed.totalAmount,
-        parsingStatus: draft.parsed.status,
-        createdAt: now,
-      );
-      final ClassificationOutput output = draft.classification;
-      final MlClassificationModel classification = MlClassificationModel(
-        parsedId: 0, // Diisi repository setelah parsing tersimpan.
-        inputText: output.inputText,
-        preprocessedText: output.preprocessedText,
-        predictedCategoryId: draft.aiCategoryId,
-        predictionProbability: output.probability,
-        modelName: output.modelName,
-        modelVersion: output.modelVersion,
-        classificationStatus: ClassificationStatus.success,
-        createdAt: now,
-      );
-      final List<TfidfFeatureModel> features = output.terms
-          .map(
-            (TfidfTerm t) => TfidfFeatureModel(
-              classificationId: 0, // Diisi repository.
-              term: t.term,
-              tf: t.tf,
-              idf: t.idf,
-              tfidfWeight: t.weight,
-            ),
-          )
-          .toList();
-      final List<TransactionItemModel> items = draft.items
-          .map(
-            (DraftItem d) => TransactionItemModel(
-              transactionId: 0, // Diisi repository.
-              name: d.name.trim(),
-              quantity: d.quantity,
-              unitPrice: d.unitPrice,
-              totalPrice: d.totalPrice,
-              categoryId: d.categoryId ?? dominantCategory,
-              aiCategoryId: d.aiCategoryId,
-              aiConfidence: d.aiConfidence,
-              createdAt: now,
-            ),
-          )
-          .toList();
+      final _ScanRecords records =
+          _buildRecords(draft, userId, storedImagePath, now, dominantCategory);
+      final OcrResultModel ocr = records.ocr;
+      final ParsedReceiptModel parsed = records.parsed;
+      final MlClassificationModel classification = records.classification;
+      final List<TfidfFeatureModel> features = records.features;
+      final List<TransactionItemModel> items = records.items;
       final String notes = draft.notes.trim();
       final String address = draft.storeAddress.trim();
       final String branch = draft.storeBranch.trim();
@@ -1080,6 +1072,8 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
         longitude: location?.point.longitude,
         locationPrecision: location?.precision.name,
         locationSource: location?.source,
+        source: _qris != null ? TransactionSource.qris : TransactionSource.scan,
+        merchantId: _qris?.merchantId,
       );
 
       final TransactionModel saved =
@@ -1101,6 +1095,7 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
         );
       }
       _lastPlanMatches = await _markPlannedItems(userId, saved, items);
+      await _finishQrisCompletion();
       _draft = null;
       _formErrors.clear();
       _status = ScanStatus.saved;
@@ -1114,6 +1109,157 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
       }
       _status = ScanStatus.ready;
       _errorMessage = 'Gagal menyimpan transaksi. Silakan coba lagi.';
+      safeNotify();
+      return false;
+    }
+  }
+
+  /// Catatan OCR, parsing, klasifikasi, TF-IDF, dan barang dari pratinjau.
+  _ScanRecords _buildRecords(
+    ScanDraft draft,
+    int userId,
+    String imagePath,
+    DateTime now,
+    int dominantCategory,
+  ) {
+    final OcrResultModel ocr = OcrResultModel(
+      userId: userId,
+      imagePath: imagePath,
+      rawText: draft.rawText,
+      ocrSource: draft.source.dbValue,
+      ocrStatus: OcrStatus.success,
+      createdAt: now,
+    );
+    final ParsedReceiptModel parsed = ParsedReceiptModel(
+      ocrId: 0, // Diisi repository setelah OCR tersimpan.
+      merchantName: draft.parsed.merchantName,
+      transactionDate: draft.parsed.transactionDate,
+      totalAmount: draft.parsed.totalAmount,
+      parsingStatus: draft.parsed.status,
+      createdAt: now,
+    );
+    final ClassificationOutput output = draft.classification;
+    final MlClassificationModel classification = MlClassificationModel(
+      parsedId: 0, // Diisi repository setelah parsing tersimpan.
+      inputText: output.inputText,
+      preprocessedText: output.preprocessedText,
+      predictedCategoryId: draft.aiCategoryId,
+      predictionProbability: output.probability,
+      modelName: output.modelName,
+      modelVersion: output.modelVersion,
+      classificationStatus: ClassificationStatus.success,
+      createdAt: now,
+    );
+    final List<TfidfFeatureModel> features = output.terms
+        .map(
+          (TfidfTerm t) => TfidfFeatureModel(
+            classificationId: 0, // Diisi repository.
+            term: t.term,
+            tf: t.tf,
+            idf: t.idf,
+            tfidfWeight: t.weight,
+          ),
+        )
+        .toList();
+    final List<TransactionItemModel> items = draft.items
+        .map(
+          (DraftItem d) => TransactionItemModel(
+            transactionId: 0, // Diisi repository.
+            name: d.name.trim(),
+            quantity: d.quantity,
+            unitPrice: d.unitPrice,
+            totalPrice: d.totalPrice,
+            categoryId: d.categoryId ?? dominantCategory,
+            aiCategoryId: d.aiCategoryId,
+            aiConfidence: d.aiConfidence,
+            createdAt: now,
+          ),
+        )
+        .toList();
+    return _ScanRecords(ocr, parsed, classification, features, items);
+  }
+
+  /// Struk ini melengkapi QRIS yang menunggu: hapus dari daftar menunggu.
+  Future<void> _finishQrisCompletion() async {
+    final QrisPendingModel? ctx = _qris;
+    final int? id = ctx?.id;
+    _qris = null;
+    if (id == null) return;
+    try {
+      await _qrisPending?.delete(id);
+    } catch (_) {
+      // Gagal menghapus catatan menunggu tidak membatalkan transaksi.
+    }
+  }
+
+  /// Melengkapi transaksi QRIS yang SUDAH ada dengan rincian barang dari
+  /// struk ini (bukan membuat transaksi ganda). Nama toko, tanggal, total,
+  /// dan titik lokasi dari QRIS tetap; barang, jejak OCR, dan kategori utama
+  /// (menurut barang terbesar) ditambahkan.
+  Future<bool> attachToTransaction(DuplicateMatch match) async {
+    final ScanDraft? draft = _draft;
+    final int? userId = _auth.currentUser?.id;
+    final int? transactionId = match.transaction.id;
+    if (draft == null || isBusy || transactionId == null) return false;
+    if (!match.canAttachReceipt) return false;
+    if (userId == null) {
+      _setError('Sesi berakhir. Silakan login kembali.');
+      return false;
+    }
+
+    final Map<String, String> errors = validateForm();
+    _formErrors
+      ..clear()
+      ..addAll(errors);
+    if (errors.isNotEmpty) {
+      safeNotify();
+      return false;
+    }
+    final int? dominantCategory = _dominantCategoryId(draft);
+    if (dominantCategory == null) return false;
+
+    _status = ScanStatus.saving;
+    _errorMessage = null;
+    safeNotify();
+
+    String? storedImagePath;
+    try {
+      storedImagePath =
+          await _imageStorageService.persistImage(draft.imagePath);
+      final DateTime now = DateTime.now();
+      final _ScanRecords records =
+          _buildRecords(draft, userId, storedImagePath, now, dominantCategory);
+      final String branch = draft.storeBranch.trim();
+      final String address = draft.storeAddress.trim();
+
+      await _transactionRepository.completeWithScan(
+        transactionId: transactionId,
+        ocr: records.ocr,
+        parsed: records.parsed,
+        classification: records.classification,
+        features: records.features,
+        items: records.items,
+        categoryId: dominantCategory,
+        storeBranch: branch.isEmpty ? null : branch,
+        storeAddress: address.isEmpty ? null : address,
+      );
+
+      _lastPlanMatches =
+          await _markPlannedItems(userId, match.transaction, records.items);
+      await _finishQrisCompletion();
+      _draft = null;
+      _formErrors.clear();
+      _status = ScanStatus.saved;
+      safeNotify();
+      onTransactionSaved?.call();
+      unawaited(_refreshModel());
+      return true;
+    } catch (_) {
+      if (storedImagePath != null) {
+        await _imageStorageService.deleteImage(storedImagePath);
+      }
+      _status = ScanStatus.ready;
+      _errorMessage = 'Gagal melengkapi transaksi. Silakan coba lagi.';
       safeNotify();
       return false;
     }
@@ -1219,7 +1365,10 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
   // ------------------------------------------------------------------ reset
 
   /// Membatalkan proses dan membuang data sementara (tidak ada yang disimpan).
-  void cancel() => reset();
+  void cancel() {
+    _qris = null;
+    reset();
+  }
 
   void reset() {
     _locationToken++;
@@ -1253,4 +1402,21 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
     _auth.removeListener(_onAuthChanged);
     super.dispose();
   }
+}
+
+/// Kumpulan catatan basis data yang dibentuk dari sebuah pratinjau struk.
+class _ScanRecords {
+  const _ScanRecords(
+    this.ocr,
+    this.parsed,
+    this.classification,
+    this.features,
+    this.items,
+  );
+
+  final OcrResultModel ocr;
+  final ParsedReceiptModel parsed;
+  final MlClassificationModel classification;
+  final List<TfidfFeatureModel> features;
+  final List<TransactionItemModel> items;
 }

@@ -73,6 +73,10 @@ class AppIcons {
   static IconData get bed => LucideIcons.bed;
 
   static IconData get layoutGrid => LucideIcons.layoutGrid;
+  static IconData get qrCode => LucideIcons.scanQrCode;
+  static IconData get flashlight => LucideIcons.flashlight;
+  static IconData get flashlightOff => LucideIcons.flashlightOff;
+  static IconData get hourglass => LucideIcons.hourglass;
 
   // Lokasi toko
   static IconData get mapPin => LucideIcons.mapPin;
