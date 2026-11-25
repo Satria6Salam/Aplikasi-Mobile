@@ -27,6 +27,25 @@ class EmptyState extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
 
+  /// Maskot yang paling sesuai dengan isi halaman kosong.
+  static MascotKind _mascotFor(ThemeArtKind kind) {
+    switch (kind) {
+      case ThemeArtKind.scan:
+      case ThemeArtKind.receipt:
+      case ThemeArtKind.history:
+        return MascotKind.coin;
+      case ThemeArtKind.wallet:
+      case ThemeArtKind.cart:
+        return MascotKind.moneyBag;
+      case ThemeArtKind.chart:
+      case ThemeArtKind.tags:
+      case ThemeArtKind.bell:
+      case ThemeArtKind.backup:
+      case ThemeArtKind.profile:
+        return MascotKind.cool;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
@@ -38,15 +57,14 @@ class EmptyState extends StatelessWidget {
         children: [
           if (art != null)
             Container(
-              width: 132,
-              height: 132,
+              width: 140,
+              height: 140,
               alignment: Alignment.center,
               decoration: const BoxDecoration(
                 color: AppColors.emeraldTint,
                 shape: BoxShape.circle,
               ),
-              child: const Mascot(
-                  kind: MascotKind.edcCool, height: 96, float: true),
+              child: Mascot(kind: _mascotFor(art!), height: 104, float: true),
             )
           else
             Container(

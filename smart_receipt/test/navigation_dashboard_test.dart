@@ -60,6 +60,14 @@ Widget routerApp(Widget home, List<String> visited) {
   return MaterialApp.router(theme: AppTheme.light, routerConfig: router);
 }
 
+/// Maskot melayang tanpa henti, jadi pumpAndSettle tidak pernah selesai;
+/// cukup jalankan beberapa bingkai sampai animasi masuk dan navigasi selesai.
+Future<void> pumpFrames(WidgetTester tester) async {
+  for (int i = 0; i < 12; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
 void main() {
   setUpAll(() async {
     await initializeDateFormatting('id_ID');
@@ -111,7 +119,7 @@ void main() {
       addTearDown(tester.view.reset);
 
       await tester.pumpWidget(routerApp(const FeaturesScreen(), <String>[]));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
 
       expect(find.text('Fitur'), findsOneWidget);
       expect(find.text('Catat & Rencanakan'), findsOneWidget);
@@ -142,10 +150,10 @@ void main() {
       final List<String> visited = <String>[];
 
       await tester.pumpWidget(routerApp(const FeaturesScreen(), visited));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
 
       await tester.tap(find.text('Target Tabungan'));
-      await tester.pumpAndSettle();
+      await pumpFrames(tester);
       expect(visited, <String>[AppRoutes.savings]);
       expect(find.text('Halaman ${AppRoutes.savings}'), findsOneWidget);
     });

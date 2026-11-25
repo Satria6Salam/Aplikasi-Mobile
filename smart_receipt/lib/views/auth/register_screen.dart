@@ -12,6 +12,7 @@ import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/auth_hero.dart';
+import '../widgets/mascot.dart';
 import '../widgets/message_banner.dart';
 import '../widgets/password_strength_meter.dart';
 
@@ -94,7 +95,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ClipRRect(
                         borderRadius:
                             BorderRadius.circular(AppRadius.cardLarge),
-                        child: const AuthHero(height: 190),
+                        child: const AuthHero(
+                          height: 210,
+                          mascot: MascotKind.cool,
+                          title: 'Ayo mulai!',
+                          subtitle: 'Buat akun, catat belanja tanpa ribet',
+                        ),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       FadeSlideIn(

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import 'fade_slide_in.dart';
+import 'mascot.dart';
 
 /// Jenis ilustrasi tema. Digambar langsung dengan kode (tanpa berkas gambar),
 /// sehingga ringan, tetap jalan offline, dan ikut animasi.
@@ -79,6 +80,7 @@ class GradientHeader extends StatelessWidget {
     required this.subtitle,
     required this.kind,
     this.trailing,
+    this.mascot,
   });
 
   final String title;
@@ -87,6 +89,9 @@ class GradientHeader extends StatelessWidget {
 
   /// Widget tambahan di bawah subjudul (mis. ringkasan angka).
   final Widget? trailing;
+
+  /// Bila diisi, maskot ditampilkan menggantikan ilustrasi [kind].
+  final MascotKind? mascot;
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +150,10 @@ class GradientHeader extends StatelessWidget {
                           ],
                         ),
                       ),
-                      ThemeArt(kind: kind, size: 84),
+                      if (mascot != null)
+                        Mascot(kind: mascot!, height: 104, float: true)
+                      else
+                        ThemeArt(kind: kind, size: 84),
                     ],
                   ),
                 ),

@@ -8,6 +8,8 @@ import '../../core/theme/app_icons.dart';
 import '../widgets/app_background.dart';
 import '../widgets/duotone_icon.dart';
 import '../widgets/fade_slide_in.dart';
+import '../widgets/mascot.dart';
+import '../widgets/mascot_title.dart';
 import '../widgets/pressable_scale.dart';
 
 /// Satu fitur pada menu Fitur.
@@ -153,7 +155,6 @@ class FeaturesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextTheme textTheme = Theme.of(context).textTheme;
     final List<FeatureSection> sections = featureSections();
 
     return Scaffold(
@@ -168,17 +169,11 @@ class FeaturesScreen extends StatelessWidget {
               AppSpacing.xl,
             ),
             children: [
-              FadeSlideIn(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Fitur', style: textTheme.headlineMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Semua alat untuk mengelola keuangan Anda',
-                      style: textTheme.bodySmall,
-                    ),
-                  ],
+              const FadeSlideIn(
+                child: MascotTitle(
+                  title: 'Fitur',
+                  subtitle: 'Semua alat untuk mengelola keuangan Anda',
+                  mascot: MascotKind.cool,
                 ),
               ),
               for (int s = 0; s < sections.length; s++) ...[

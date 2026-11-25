@@ -5,14 +5,20 @@ import '../../core/theme/app_icons.dart';
 
 /// Karakter maskot SmartReceipt (berkas di assets/images).
 enum MascotKind {
-  /// Struk yang mengedip dan mengacungkan jari.
-  receipt('assets/images/mascot_receipt.png', 302 / 274),
+  /// Berjalan sambil membawa koin emas: ajakan mulai mencatat.
+  coin('assets/images/mascot_coin.png', 595 / 560),
 
-  /// Mesin EDC dengan isyarat "oke".
-  edcOk('assets/images/mascot_edc_ok.png', 445 / 480),
+  /// Membawa karung uang, uang beterbangan: pemasukan dan tabungan.
+  moneyBag('assets/images/mascot_money_bag.png', 587 / 560),
 
-  /// Mesin EDC berkacamata hitam sambil membawa es krim.
-  edcCool('assets/images/mascot_edc_cool.png', 480 / 428);
+  /// Tersenyum lebar di samping karung uang: ringkasan keuangan di Beranda.
+  moneyHappy('assets/images/mascot_money_happy.png', 589 / 560),
+
+  /// Berkacamata hitam, tangan bersedekap: santai, semua terkendali.
+  cool('assets/images/mascot_cool.png', 423 / 560),
+
+  /// Jaket kulit dan jempol: sambutan di halaman Masuk.
+  thumbsUp('assets/images/mascot_thumbs_up.png', 348 / 560);
 
   const MascotKind(this.asset, this.aspect);
 
@@ -27,7 +33,7 @@ enum MascotKind {
 class Mascot extends StatefulWidget {
   const Mascot({
     super.key,
-    this.kind = MascotKind.receipt,
+    this.kind = MascotKind.moneyHappy,
     this.height = 120,
     this.float = false,
   });

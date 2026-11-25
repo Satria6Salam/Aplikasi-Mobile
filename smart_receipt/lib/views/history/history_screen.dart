@@ -18,6 +18,8 @@ import '../widgets/theme_illustrations.dart';
 import '../widgets/period_search_sheet.dart';
 import '../widgets/period_selector.dart';
 import '../widgets/app_background.dart';
+import '../widgets/mascot.dart';
+import '../widgets/mascot_title.dart';
 import '../widgets/transaction_card.dart';
 import '../widgets/transaction_detail_sheet.dart';
 
@@ -91,17 +93,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: FadeSlideIn(
                       child: Row(
                         children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Riwayat Transaksi',
-                                    style: textTheme.headlineMedium),
-                                Text(
-                                  'Cari dan saring semua catatan Anda',
-                                  style: textTheme.bodySmall,
-                                ),
-                              ],
+                          const Expanded(
+                            child: MascotTitle(
+                              title: 'Riwayat',
+                              subtitle: 'Cari dan saring semua catatan Anda',
+                              mascot: MascotKind.coin,
                             ),
                           ),
                           Container(

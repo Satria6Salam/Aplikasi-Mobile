@@ -23,6 +23,7 @@ class SummaryCard extends StatelessWidget {
     this.compareLabel = 'periode lalu',
     this.changePercent,
     this.topCategoryName,
+    this.mascot = MascotKind.moneyHappy,
   });
 
   final String periodLabel;
@@ -38,6 +39,11 @@ class SummaryCard extends StatelessWidget {
   /// Perubahan (%) dibanding periode yang sama bulan lalu (null bila tak ada pembanding).
   final double? changePercent;
   final String? topCategoryName;
+
+  /// Maskot besar di sisi kiri kartu; null untuk tanpa maskot.
+  final MascotKind? mascot;
+
+  static const double _mascotHeight = 120;
 
   @override
   Widget build(BuildContext context) {
@@ -69,50 +75,69 @@ class SummaryCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Maskot di kiri dan ringkasan rata kanan, sejajar di tengah
+                // agar ruang kiri dan kanan seimbang.
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: Text(
-                        'Total Pengeluaran $periodLabel',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: const Color(0xCCFFFFFF),
-                          fontWeight: FontWeight.w500,
+                    if (mascot != null) ...[
+                      Transform.translate(
+                        offset: const Offset(-8, 0),
+                        child: Mascot(
+                          kind: mascot!,
+                          height: _mascotHeight,
+                          float: true,
                         ),
                       ),
+                      const SizedBox(width: 2),
+                    ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Total Pengeluaran $periodLabel',
+                            textAlign: TextAlign.right,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: const Color(0xCCFFFFFF),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: AnimatedCounter(
+                              value: totalAmount,
+                              formatter: AppFormatters.rupiah,
+                              style: AppTextStyles.amount(
+                                  size: 36, color: AppColors.white),
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Wrap(
+                            alignment: WrapAlignment.end,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              if (change != null)
+                                _Pill(
+                                  icon: change >= 0
+                                      ? AppIcons.trendingUp
+                                      : AppIcons.trendingDown,
+                                  text:
+                                      '${change >= 0 ? 'Naik' : 'Turun'} ${change.abs().round()}% dari $compareLabel',
+                                ),
+                              if (topCategoryName != null)
+                                _Pill(
+                                  icon: AppIcons.crown,
+                                  text: 'Terbesar: $topCategoryName',
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                    const Mascot(
-                        kind: MascotKind.receipt, height: 44, float: true),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: AnimatedCounter(
-                    value: totalAmount,
-                    formatter: AppFormatters.rupiah,
-                    style:
-                        AppTextStyles.amount(size: 38, color: AppColors.white),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (change != null)
-                      _Pill(
-                        icon: change >= 0
-                            ? AppIcons.trendingUp
-                            : AppIcons.trendingDown,
-                        text:
-                            '${change >= 0 ? 'Naik' : 'Turun'} ${change.abs().round()}% dari $compareLabel',
-                      ),
-                    if (topCategoryName != null)
-                      _Pill(
-                        icon: AppIcons.crown,
-                        text: 'Terbesar: $topCategoryName',
-                      ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),

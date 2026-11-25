@@ -13,6 +13,7 @@ import '../widgets/message_banner.dart';
 import '../widgets/pressable_scale.dart';
 import '../widgets/processing_overlay.dart';
 import '../widgets/scan_animation.dart';
+import '../widgets/mascot.dart';
 
 /// Pemindai Struk (UC-02): pilih sumber gambar (Kamera, Galeri, atau File),
 /// lalu proses OCR, parsing, dan klasifikasi. Setelah siap, pengguna dibawa ke Pratinjau.
@@ -85,7 +86,20 @@ class _CameraScreenState extends State<CameraScreen> {
                             AppDecorations.card(radius: AppRadius.cardLarge),
                         child: Column(
                           children: [
-                            const ScanAnimation(),
+                            // Maskot menemani animasi pindai.
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Mascot(
+                                  kind: MascotKind.thumbsUp,
+                                  height: 132,
+                                  float: true,
+                                ),
+                                SizedBox(width: 12),
+                                Flexible(child: ScanAnimation()),
+                              ],
+                            ),
                             const SizedBox(height: AppSpacing.lg),
                             Text(
                               'Pindai struk belanja Anda',

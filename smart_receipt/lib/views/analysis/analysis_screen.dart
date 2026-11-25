@@ -22,6 +22,7 @@ import '../widgets/segmented_tabs.dart';
 import '../widgets/spending_trend_chart.dart';
 import '../widgets/top_merchants_card.dart';
 import '../widgets/trend_cards.dart';
+import '../widgets/mascot.dart';
 
 /// Menu Analisis, terbagi tiga tab: Rekap (kategori dan toko), Tren (harian, bulanan,
 /// tahunan), dan Wawasan (profil serta analisis perilaku pengeluaran).
@@ -72,6 +73,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                       title: 'Analisis',
                       subtitle: 'Pahami ke mana uang Anda pergi',
                       kind: ThemeArtKind.chart,
+                      mascot: MascotKind.moneyBag,
                     ),
                     const SizedBox(height: AppSpacing.md),
                     FadeSlideIn(

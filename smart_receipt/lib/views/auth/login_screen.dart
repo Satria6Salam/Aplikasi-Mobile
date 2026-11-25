@@ -67,6 +67,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: AuthHero(
                       height: 300 + MediaQuery.paddingOf(context).top,
+                      topInset: MediaQuery.paddingOf(context).top,
+                      title: 'Halo lagi!',
+                      subtitle: 'Masuk dan lanjut catat keuanganmu',
                     ),
                   ),
                   Positioned(
