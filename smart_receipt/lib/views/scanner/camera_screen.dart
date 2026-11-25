@@ -81,15 +81,8 @@ class _CameraScreenState extends State<CameraScreen> {
                     FadeSlideIn(
                       child: Container(
                         padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFFECFDF5), Color(0xFFF0FDFA)],
-                          ),
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.cardLarge),
-                        ),
+                        decoration:
+                            AppDecorations.card(radius: AppRadius.cardLarge),
                         child: Column(
                           children: [
                             const ScanAnimation(),
@@ -301,10 +294,7 @@ class _TipsCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.emeraldTint,
-        borderRadius: BorderRadius.circular(AppRadius.cardLarge),
-      ),
+      decoration: AppDecorations.card(radius: AppRadius.cardLarge),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -69,16 +69,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final String? success = profile.successMessage;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pengaturan & Profil')),
       body: SafeArea(
         child: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () => FocusScope.of(context).unfocus(),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.lg),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.lg,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // Judul halaman, seragam dengan Riwayat dan Fitur.
+                FadeSlideIn(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Profil', style: textTheme.headlineMedium),
+                      Text(
+                        'Akun, notifikasi, serta ekspor dan cadangan data',
+                        style: textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
                 // Kartu profil
                 FadeSlideIn(
                   child: Container(

@@ -223,7 +223,7 @@ class _IncomeEditorState extends State<_IncomeEditor> {
               for (final String preset in _presets)
                 ActionChip(
                   label: Text(preset),
-                  backgroundColor: AppColors.white,
+                  backgroundColor: AppColors.surface,
                   side: const BorderSide(color: AppColors.border),
                   onPressed: () => setState(() {
                     _source.text = preset;

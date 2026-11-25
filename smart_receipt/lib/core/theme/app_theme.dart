@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
 import 'app_decorations.dart';
@@ -16,7 +17,7 @@ class AppTheme {
       onPrimary: AppColors.white,
       secondary: AppColors.emeraldDark,
       onSecondary: AppColors.white,
-      surface: AppColors.white,
+      surface: AppColors.surface,
       onSurface: AppColors.slateDark,
       error: AppColors.error,
       onError: AppColors.white,
@@ -37,22 +38,23 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.offWhite,
+      scaffoldBackgroundColor: Colors.transparent,
       textTheme: textTheme,
       splashFactory: InkRipple.splashFactory,
       iconTheme: const IconThemeData(color: AppColors.slateDark, size: 24),
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.offWhite,
+        backgroundColor: Colors.transparent,
         foregroundColor: AppColors.slateDark,
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
+        systemOverlayStyle: SystemUiOverlayStyle.dark,
         centerTitle: false,
         titleTextStyle: textTheme.titleLarge,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.white,
+        fillColor: AppColors.surface,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
           vertical: 16,
@@ -114,6 +116,22 @@ class AppTheme {
           color: AppColors.white,
         ),
         shape: controlShape,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.cardLarge),
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.surface,
+        side: const BorderSide(color: AppColors.border),
+        labelStyle: textTheme.labelLarge,
       ),
       dividerTheme: const DividerThemeData(
         color: AppColors.border,

@@ -30,8 +30,9 @@ class StorePlace {
       .map((TransactionModel t) => t.transactionDate)
       .reduce((DateTime a, DateTime b) => a.isAfter(b) ? a : b);
 
-  String get title =>
-      branch == null || branch!.isEmpty ? merchantName : '$merchantName $branch';
+  String get title => branch == null || branch!.isEmpty
+      ? merchantName
+      : '$merchantName $branch';
 }
 
 /// Data layar Peta Toko: transaksi yang punya koordinat, dikelompokkan per toko.

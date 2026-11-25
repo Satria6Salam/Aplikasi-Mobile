@@ -93,8 +93,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             mapController: _controller,
             options: MapOptions(
               initialCenter: _center,
-              initialZoom:
-                  widget.initial == null ? 4.5 : widget.initialZoom,
+              initialZoom: widget.initial == null ? 4.5 : widget.initialZoom,
               minZoom: 3,
               maxZoom: 19,
               interactionOptions: const InteractionOptions(
@@ -148,7 +147,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
             bottom: 112,
             child: FloatingActionButton.small(
               heroTag: 'picker-locate',
-              backgroundColor: AppColors.white,
+              backgroundColor: AppColors.surface,
               foregroundColor: AppColors.slateDark,
               onPressed: _locating ? null : _goToMyLocation,
               tooltip: 'Lokasi saya',

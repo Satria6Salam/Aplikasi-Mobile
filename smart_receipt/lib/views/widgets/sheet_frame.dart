@@ -26,7 +26,7 @@ class SheetFrame extends StatelessWidget {
       // Material (bukan Container berlatar) agar ListTile/Switch di dalamnya
       // punya permukaan untuk menggambar efek sentuhan.
       child: Material(
-        color: AppColors.white,
+        color: AppColors.surface,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppRadius.cardLarge),

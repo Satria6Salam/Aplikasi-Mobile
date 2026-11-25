@@ -125,7 +125,7 @@ class _PeriodSearchSheetState extends State<_PeriodSearchSheet> {
           EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: const BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppRadius.cardLarge),
           ),
@@ -350,7 +350,7 @@ class _ModeChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? AppColors.emerald : AppColors.white,
+            color: selected ? AppColors.emerald : AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.control),
             border: Border.all(
               color: selected ? AppColors.emerald : AppColors.border,
@@ -387,7 +387,7 @@ class _SmallChip extends StatelessWidget {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? AppColors.emeraldTint : AppColors.white,
+          color: selected ? AppColors.emeraldTint : AppColors.surface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected ? AppColors.emerald : AppColors.border,

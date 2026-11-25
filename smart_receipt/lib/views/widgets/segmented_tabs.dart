@@ -26,7 +26,7 @@ class SegmentedTabs extends StatelessWidget {
       height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8EEF4),
+        color: const Color(0x1A16855A),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Stack(
@@ -40,7 +40,7 @@ class SegmentedTabs extends StatelessWidget {
               heightFactor: 1,
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: AppColors.surfaceHigh,
                   borderRadius: BorderRadius.circular(AppRadius.control),
                   boxShadow: const [
                     BoxShadow(

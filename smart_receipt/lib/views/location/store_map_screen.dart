@@ -131,7 +131,8 @@ class _StoreMapViewState extends State<_StoreMapView> {
             child: ListView.separated(
               padding: const EdgeInsets.all(AppSpacing.md),
               itemCount: vm.places.length,
-              separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+              separatorBuilder: (_, __) =>
+                  const SizedBox(height: AppSpacing.sm),
               itemBuilder: (BuildContext context, int i) {
                 final StorePlace p = vm.places[i];
                 final bool active = identical(p, selected);

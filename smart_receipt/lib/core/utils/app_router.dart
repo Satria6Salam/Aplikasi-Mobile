@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../views/widgets/app_background.dart';
 import '../../views/analysis/analysis_screen.dart';
 import '../../views/auth/login_screen.dart';
 import '../../views/auth/register_screen.dart';
@@ -37,7 +38,8 @@ class AppRouter {
   static Page<void> _page(GoRouterState state, Widget child) {
     return CustomTransitionPage<void>(
       key: state.pageKey,
-      child: child,
+      // Tiap halaman membawa latar sendiri agar transisi tidak tembus pandang.
+      child: AppBackground(child: child),
       transitionDuration: const Duration(milliseconds: 340),
       reverseTransitionDuration: const Duration(milliseconds: 260),
       transitionsBuilder: (
@@ -137,7 +139,8 @@ class AppRouter {
               routes: <RouteBase>[
                 GoRoute(
                   path: AppRoutes.settings,
-                  builder: (context, state) => const SettingsScreen(),
+                  builder: (context, state) =>
+                      const AppBackground(child: SettingsScreen()),
                 ),
               ],
             ),

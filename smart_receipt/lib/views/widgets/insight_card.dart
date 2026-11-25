@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'animated_card.dart';
+
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_decorations.dart';
 import '../../core/theme/app_icons.dart';
@@ -86,10 +88,10 @@ class InsightCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
 
-    return Container(
+    return AnimatedCard(
       width: double.infinity,
       padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: AppDecorations.card(),
+      phase: 0.69,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -88,7 +88,8 @@ class _StoreLocationCardState extends State<StoreLocationCard> {
                   color: AppColors.mint,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(AppIcons.mapPin, size: 18, color: AppColors.emerald),
+                child:
+                    Icon(AppIcons.mapPin, size: 18, color: AppColors.emerald),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -309,7 +310,7 @@ class _ActionChip extends StatelessWidget {
       avatar: Icon(icon, size: 16, color: AppColors.emerald),
       label: Text(label),
       onPressed: onTap,
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.surface,
       side: const BorderSide(color: AppColors.border),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.control),

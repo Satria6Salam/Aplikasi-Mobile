@@ -18,7 +18,7 @@ Future<bool> showConfirmDialog(
     context: context,
     builder: (BuildContext dialogContext) {
       return AlertDialog(
-        backgroundColor: AppColors.white,
+        backgroundColor: AppColors.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.cardLarge),

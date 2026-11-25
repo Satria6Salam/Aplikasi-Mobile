@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_decorations.dart';
 import 'custom_button.dart';
+import 'mascot.dart';
 import 'theme_illustrations.dart';
 
 /// Tampilan kosong: ikon, judul, penjelasan, dan (opsional) tombol aksi.
@@ -37,21 +38,15 @@ class EmptyState extends StatelessWidget {
         children: [
           if (art != null)
             Container(
-              width: 120,
-              height: 120,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: AppColors.cardGradient,
+              width: 132,
+              height: 132,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: AppColors.emeraldTint,
                 shape: BoxShape.circle,
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: AppColors.emeraldDeep.withValues(alpha: 0.25),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
               ),
-              child: ThemeArt(kind: art!, size: 92),
+              child: const Mascot(
+                  kind: MascotKind.edcCool, height: 96, float: true),
             )
           else
             Container(

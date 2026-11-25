@@ -79,7 +79,7 @@ class _CategoryChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? style.tint : AppColors.white,
+          color: isSelected ? style.tint : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.control),
           border: Border.all(
             color: isSelected ? style.color : AppColors.border,

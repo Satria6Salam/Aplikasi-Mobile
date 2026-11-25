@@ -34,7 +34,7 @@ class _SheetFrame extends StatelessWidget {
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
         decoration: const BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppRadius.cardLarge),
           ),
@@ -160,7 +160,7 @@ class _DateFilterSheet extends StatelessWidget {
               for (final (String label, DateChoice choice) in presets)
                 ActionChip(
                   label: Text(label),
-                  backgroundColor: AppColors.white,
+                  backgroundColor: AppColors.surface,
                   side: const BorderSide(color: AppColors.border),
                   onPressed: () =>
                       Navigator.of(context).pop<DateChoice>(choice),
@@ -258,19 +258,19 @@ class _TotalFilterSheetState extends State<_TotalFilterSheet> {
               ActionChip(
                 label: const Text('Di bawah Rp 50.000'),
                 onPressed: () => _setPreset(null, 50000),
-                backgroundColor: AppColors.white,
+                backgroundColor: AppColors.surface,
                 side: const BorderSide(color: AppColors.border),
               ),
               ActionChip(
                 label: const Text('Rp 50.000 – 200.000'),
                 onPressed: () => _setPreset(50000, 200000),
-                backgroundColor: AppColors.white,
+                backgroundColor: AppColors.surface,
                 side: const BorderSide(color: AppColors.border),
               ),
               ActionChip(
                 label: const Text('Di atas Rp 200.000'),
                 onPressed: () => _setPreset(200000, null),
-                backgroundColor: AppColors.white,
+                backgroundColor: AppColors.surface,
                 side: const BorderSide(color: AppColors.border),
               ),
             ],
@@ -364,7 +364,7 @@ class _CategoryFilterSheetState extends State<_CategoryFilterSheet> {
                   selected: _selected.contains(c.id),
                   selectedColor: AppColors.emeraldTint,
                   checkmarkColor: AppColors.emeraldDeep,
-                  backgroundColor: AppColors.white,
+                  backgroundColor: AppColors.surface,
                   side: BorderSide(
                     color: _selected.contains(c.id)
                         ? AppColors.emerald

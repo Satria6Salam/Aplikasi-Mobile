@@ -54,7 +54,7 @@ class _ScanAnimationState extends State<ScanAnimation>
       height: widget.height,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.card),
         boxShadow: const [
           BoxShadow(

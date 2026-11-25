@@ -363,7 +363,7 @@ class _FilterButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color: active ? AppColors.emeraldTint : AppColors.white,
+        color: active ? AppColors.emeraldTint : AppColors.surface,
         shape: StadiumBorder(
           side:
               BorderSide(color: active ? AppColors.emerald : AppColors.border),

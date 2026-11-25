@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_icons.dart';
+import 'mascot.dart';
 
-/// Logo SmartReceipt: kotak gradasi Emerald dengan ikon pemindai.
+/// Logo SmartReceipt: kotak gradasi Emerald dengan maskot struk.
 /// Bila [animated], logo muncul dengan efek membesar memantul.
 class AppLogo extends StatelessWidget {
   const AppLogo({super.key, this.size = 64, this.animated = false});
@@ -26,7 +26,10 @@ class AppLogo extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(AppIcons.scanLine, color: AppColors.white, size: size * 0.5),
+      child: Padding(
+        padding: EdgeInsets.all(size * 0.1),
+        child: Mascot(kind: MascotKind.receipt, height: size * 0.8),
+      ),
     );
   }
 

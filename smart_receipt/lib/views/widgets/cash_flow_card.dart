@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import 'animated_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -85,9 +87,10 @@ class CashFlowBalanceCard extends StatelessWidget {
     final CashFlow flow = vm.flow;
     final bool noIncome = flow.income <= 0;
 
-    return Container(
+    return AnimatedCard(
+      radius: AppRadius.cardLarge,
       padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: AppDecorations.card(radius: AppRadius.cardLarge),
+      phase: 0.23,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -202,9 +205,10 @@ class CashFlowTrendCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.lg),
-      child: Container(
+      child: AnimatedCard(
+        radius: AppRadius.cardLarge,
         padding: const EdgeInsets.all(AppSpacing.lg),
-        decoration: AppDecorations.card(radius: AppRadius.cardLarge),
+        phase: 0.46,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

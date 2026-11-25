@@ -177,7 +177,7 @@ class _GoalEditorState extends State<_GoalEditor> {
               ])
                 ActionChip(
                   label: Text(label),
-                  backgroundColor: AppColors.white,
+                  backgroundColor: AppColors.surface,
                   side: const BorderSide(color: AppColors.border),
                   onPressed: () => _setDeadline(
                     DateTime(today.year, today.month + months, today.day),
@@ -186,7 +186,7 @@ class _GoalEditorState extends State<_GoalEditor> {
               ActionChip(
                 label: const Text('Tanpa tenggat'),
                 backgroundColor:
-                    _deadline == null ? AppColors.emeraldTint : AppColors.white,
+                    _deadline == null ? AppColors.emeraldTint : AppColors.surface,
                 side: BorderSide(
                   color:
                       _deadline == null ? AppColors.emerald : AppColors.border,

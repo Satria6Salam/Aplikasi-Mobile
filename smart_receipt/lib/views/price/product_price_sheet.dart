@@ -55,7 +55,7 @@ class _ProductPriceSheet extends StatelessWidget {
       builder: (BuildContext context, ScrollController controller) {
         return Container(
           decoration: const BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(
               top: Radius.circular(AppRadius.cardLarge),
             ),

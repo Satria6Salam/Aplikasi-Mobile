@@ -100,7 +100,7 @@ class _FilterChip extends StatelessWidget {
         curve: Curves.easeOut,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: selected ? tint : AppColors.white,
+          color: selected ? tint : AppColors.surface,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected ? color : AppColors.border,

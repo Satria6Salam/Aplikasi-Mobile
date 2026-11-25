@@ -15,6 +15,7 @@ class DashboardHeader extends StatelessWidget {
     required this.onSettingsTap,
     this.onNotificationTap,
     this.now,
+    this.onDark = false,
   });
 
   final String name;
@@ -23,6 +24,9 @@ class DashboardHeader extends StatelessWidget {
 
   /// Untuk pengujian; default waktu saat ini.
   final DateTime? now;
+
+  /// True bila ditampilkan di atas latar hijau gelap (teks putih, tombol kaca).
+  final bool onDark;
 
   static String greetingFor(DateTime time) {
     final int h = time.hour;
@@ -48,7 +52,7 @@ class DashboardHeader extends StatelessWidget {
               Text(
                 greeting,
                 style: textTheme.bodyMedium?.copyWith(
-                  color: AppColors.coolGray,
+                  color: onDark ? const Color(0xB3FFFFFF) : AppColors.coolGray,
                 ),
               ),
               const SizedBox(height: 2),
@@ -60,7 +64,7 @@ class DashboardHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: textTheme.headlineSmall?.copyWith(
-                        color: AppColors.forest,
+                        color: onDark ? AppColors.white : AppColors.forest,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -74,11 +78,14 @@ class DashboardHeader extends StatelessWidget {
         ),
         if (onNotificationTap != null) ...[
           Container(
-            decoration: AppDecorations.card(radius: 14),
+            decoration: onDark
+                ? AppDecorations.glass(radius: 14)
+                : AppDecorations.card(radius: 14),
             child: IconButton(
               tooltip: 'Notifikasi',
               onPressed: onNotificationTap,
-              icon: Icon(AppIcons.bell, size: 21, color: AppColors.forest),
+              icon: Icon(AppIcons.bell,
+                  size: 21, color: onDark ? AppColors.white : AppColors.forest),
             ),
           ),
           const SizedBox(width: 10),

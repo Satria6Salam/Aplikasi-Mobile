@@ -170,8 +170,8 @@ class StoreAddress {
       }
       // Hanya nama toko dan kota (mis. dari QRIS yang tidak memuat alamat).
       if (city != null &&
-          !queries.any((AddressQuery q) =>
-              q.precision == LocationPrecision.store)) {
+          !queries.any(
+              (AddressQuery q) => q.precision == LocationPrecision.store)) {
         add(<String?>[merchant, city], LocationPrecision.store);
       }
     }

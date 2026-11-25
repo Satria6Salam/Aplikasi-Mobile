@@ -5,6 +5,7 @@ import '../../core/constants/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_decorations.dart';
 import '../../core/theme/app_icons.dart';
+import '../widgets/app_background.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/pressable_scale.dart';
 
@@ -155,36 +156,39 @@ class FeaturesScreen extends StatelessWidget {
     final List<FeatureSection> sections = featureSections();
 
     return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.lg,
-            AppSpacing.xl,
-          ),
-          children: [
-            FadeSlideIn(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Fitur', style: textTheme.headlineMedium),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Semua alat untuk mengelola keuangan Anda',
-                    style: textTheme.bodySmall,
-                  ),
-                ],
-              ),
+      backgroundColor: Colors.transparent,
+      body: AppBackground(
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.xl,
             ),
-            for (int s = 0; s < sections.length; s++) ...[
-              const SizedBox(height: AppSpacing.lg),
+            children: [
               FadeSlideIn(
-                delay: Duration(milliseconds: 60 * (s + 1)),
-                child: _SectionView(section: sections[s]),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Fitur', style: textTheme.headlineMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Semua alat untuk mengelola keuangan Anda',
+                      style: textTheme.bodySmall,
+                    ),
+                  ],
+                ),
               ),
+              for (int s = 0; s < sections.length; s++) ...[
+                const SizedBox(height: AppSpacing.lg),
+                FadeSlideIn(
+                  delay: Duration(milliseconds: 60 * (s + 1)),
+                  child: _SectionView(section: sections[s]),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

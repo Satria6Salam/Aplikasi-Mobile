@@ -6,6 +6,8 @@ import '../../core/theme/app_icons.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/formatters.dart';
 import 'animated_counter.dart';
+import 'mascot.dart';
+import 'shimmer_sweep.dart';
 
 /// Kartu utama Dasbor: total bulan ini (animasi hitung), perbandingan dengan
 /// bulan lalu, dan tiga angka penting.
@@ -44,63 +46,21 @@ class SummaryCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x400B5238),
-            blurRadius: 28,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
+      decoration: AppDecorations.glass(radius: 28),
       clipBehavior: Clip.antiAlias,
       child: Stack(
         children: [
-          // Hiasan lingkaran transparan untuk memberi kedalaman.
+          const ShimmerSweep(radius: 28),
+          // Kilau lembut di sudut kanan atas.
           Positioned(
-            right: -40,
-            top: -40,
+            right: -50,
+            top: -60,
             child: Container(
-              width: 160,
-              height: 160,
+              width: 170,
+              height: 170,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0x1AFFFFFF),
-              ),
-            ),
-          ),
-          // Hiasan kartu miring seperti kartu bank.
-          Positioned(
-            right: -26,
-            bottom: 38,
-            child: Transform.rotate(
-              angle: -0.22,
-              child: Container(
-                width: 120,
-                height: 76,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0x4434C38A), Color(0x1134C38A)],
-                  ),
-                  border: Border.all(color: const Color(0x33FFFFFF)),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            right: 50,
-            bottom: -60,
-            child: Container(
-              width: 130,
-              height: 130,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0x14FFFFFF),
+                color: Color(0x1F34C38A),
               ),
             ),
           ),
@@ -120,16 +80,8 @@ class SummaryCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: const BoxDecoration(
-                        color: Color(0x33FFFFFF),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(AppIcons.wallet,
-                          size: 19, color: AppColors.white),
-                    ),
+                    const Mascot(
+                        kind: MascotKind.receipt, height: 44, float: true),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),

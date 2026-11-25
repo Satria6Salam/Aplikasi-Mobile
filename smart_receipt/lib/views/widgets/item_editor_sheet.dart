@@ -151,7 +151,7 @@ class _ItemEditorState extends State<_ItemEditor> {
           EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: const BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(AppRadius.cardLarge),
           ),

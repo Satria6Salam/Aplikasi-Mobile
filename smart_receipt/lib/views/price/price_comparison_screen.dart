@@ -173,7 +173,7 @@ class _PriceComparisonViewState extends State<_PriceComparisonView> {
                   onSelected: vm.setOnlyComparable,
                   selectedColor: AppColors.emeraldTint,
                   checkmarkColor: AppColors.emeraldDeep,
-                  backgroundColor: AppColors.white,
+                  backgroundColor: AppColors.surface,
                   side: BorderSide(
                     color: vm.onlyComparable
                         ? AppColors.emerald

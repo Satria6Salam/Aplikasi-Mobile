@@ -11,7 +11,7 @@ import '../widgets/app_logo.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
 import '../widgets/fade_slide_in.dart';
-import '../widgets/hero_scene.dart';
+import '../widgets/auth_hero.dart';
 import '../widgets/message_banner.dart';
 
 /// Halaman Login (UC-01). Navigasi ke Dasbor dilakukan otomatis oleh Auth Guard.
@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: const BorderRadius.vertical(
                       bottom: Radius.circular(36),
                     ),
-                    child: HeroScene(
+                    child: AuthHero(
                       height: 300 + MediaQuery.paddingOf(context).top,
                     ),
                   ),
@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Container(
                         padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
                         decoration: BoxDecoration(
-                          color: AppColors.white.withValues(alpha: 0.92),
+                          color: AppColors.surface.withValues(alpha: 0.92),
                           borderRadius: BorderRadius.circular(999),
                           boxShadow: AppDecorations.softShadow,
                         ),
@@ -141,18 +141,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           offset: const Offset(0, 0.1),
                           child: Container(
                             padding: const EdgeInsets.all(AppSpacing.lg),
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.cardLarge),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x1416855A),
-                                  blurRadius: 30,
-                                  offset: Offset(0, 12),
-                                ),
-                              ],
-                            ),
+                            decoration: AppDecorations.card(
+                                radius: AppRadius.cardLarge),
                             child: Form(
                               key: _formKey,
                               autovalidateMode:

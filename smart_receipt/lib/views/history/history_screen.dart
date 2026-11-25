@@ -17,6 +17,7 @@ import '../widgets/fade_slide_in.dart';
 import '../widgets/theme_illustrations.dart';
 import '../widgets/period_search_sheet.dart';
 import '../widgets/period_selector.dart';
+import '../widgets/app_background.dart';
 import '../widgets/transaction_card.dart';
 import '../widgets/transaction_detail_sheet.dart';
 
@@ -70,243 +71,249 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     return Scaffold(
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: AppColors.emerald,
-          onRefresh: dash.refresh,
-          child: CustomScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: FadeSlideIn(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Riwayat Transaksi',
-                                  style: textTheme.headlineMedium),
-                              Text(
-                                'Cari dan saring semua catatan Anda',
-                                style: textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          decoration:
-                              AppDecorations.card(radius: AppRadius.control),
-                          child: IconButton(
-                            tooltip: 'Pencarian lanjutan',
-                            icon: Icon(AppIcons.slidersHorizontal, size: 22),
-                            onPressed: () => context.push(AppRoutes.search),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          decoration:
-                              AppDecorations.card(radius: AppRadius.control),
-                          child: PopupMenuButton<HistorySort>(
-                            tooltip: 'Urutkan',
-                            icon: Icon(AppIcons.arrowUpDown, size: 22),
-                            initialValue: dash.sort,
-                            onSelected: dash.setSort,
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(AppRadius.card),
-                            ),
-                            itemBuilder: (BuildContext context) {
-                              return <PopupMenuEntry<HistorySort>>[
-                                for (final HistorySort s in HistorySort.values)
-                                  PopupMenuItem<HistorySort>(
-                                    value: s,
-                                    child: Row(
-                                      children: [
-                                        Expanded(child: Text(_sortLabel(s))),
-                                        if (s == dash.sort)
-                                          Icon(
-                                            AppIcons.check,
-                                            size: 18,
-                                            color: AppColors.emeraldDark,
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                              ];
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
+      backgroundColor: Colors.transparent,
+      body: AppBackground(
+        child: SafeArea(
+          child: RefreshIndicator(
+            color: AppColors.emerald,
+            onRefresh: dash.refresh,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
                   ),
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    FadeSlideIn(
-                      delay: const Duration(milliseconds: 60),
-                      child: PeriodSelector(
-                        period: dash.period,
-                        canGoNext: dash.canGoNext,
-                        onPrevious: dash.goToPrevious,
-                        onNext: dash.goToNext,
-                        onSearch: () => showPeriodSearchSheet(context),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    FadeSlideIn(
-                      delay: const Duration(milliseconds: 120),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: dash.setSearchQuery,
-                        textInputAction: TextInputAction.search,
-                        decoration: InputDecoration(
-                          hintText: 'Cari nama toko...',
-                          prefixIcon: Icon(
-                            AppIcons.search,
-                            size: 20,
-                            color: AppColors.coolGray,
-                          ),
-                          suffixIcon: dash.searchQuery.isEmpty
-                              ? null
-                              : IconButton(
-                                  tooltip: 'Hapus pencarian',
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    dash.setSearchQuery('');
-                                  },
-                                  icon: Icon(AppIcons.close, size: 18),
+                  sliver: SliverToBoxAdapter(
+                    child: FadeSlideIn(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Riwayat Transaksi',
+                                    style: textTheme.headlineMedium),
+                                Text(
+                                  'Cari dan saring semua catatan Anda',
+                                  style: textTheme.bodySmall,
                                 ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                  ]),
-                ),
-              ),
-              if (dash.categorySummaries.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: FadeSlideIn(
-                    delay: const Duration(milliseconds: 180),
-                    child: CategoryFilterBar(
-                      categories: dash.categorySummaries,
-                      selectedIds: dash.categoryFilter,
-                      onToggle: dash.toggleCategoryFilter,
-                      onClear: dash.clearCategoryFilter,
-                    ),
-                  ),
-                ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.emeraldTint,
-                      borderRadius: BorderRadius.circular(AppRadius.card),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(AppIcons.receipt,
-                            size: 18, color: AppColors.emeraldDeep),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${items.length} transaksi'
-                            '${dash.hasCategoryFilter ? '  •  kategori terpilih' : ''}',
-                            style: textTheme.labelLarge?.copyWith(
-                              color: AppColors.emeraldDeep,
+                              ],
                             ),
                           ),
-                        ),
-                        AnimatedCounter(
-                          value: dash.filteredTotal,
-                          formatter: AppFormatters.rupiah,
-                          style: AppTextStyles.amount(
-                            size: 15,
-                            color: AppColors.emeraldDeep,
+                          Container(
+                            decoration:
+                                AppDecorations.card(radius: AppRadius.control),
+                            child: IconButton(
+                              tooltip: 'Pencarian lanjutan',
+                              icon: Icon(AppIcons.slidersHorizontal, size: 22),
+                              onPressed: () => context.push(AppRoutes.search),
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Container(
+                            decoration:
+                                AppDecorations.card(radius: AppRadius.control),
+                            child: PopupMenuButton<HistorySort>(
+                              tooltip: 'Urutkan',
+                              icon: Icon(AppIcons.arrowUpDown, size: 22),
+                              initialValue: dash.sort,
+                              onSelected: dash.setSort,
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.card),
+                              ),
+                              itemBuilder: (BuildContext context) {
+                                return <PopupMenuEntry<HistorySort>>[
+                                  for (final HistorySort s
+                                      in HistorySort.values)
+                                    PopupMenuItem<HistorySort>(
+                                      value: s,
+                                      child: Row(
+                                        children: [
+                                          Expanded(child: Text(_sortLabel(s))),
+                                          if (s == dash.sort)
+                                            Icon(
+                                              AppIcons.check,
+                                              size: 18,
+                                              color: AppColors.emeraldDark,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                ];
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              if (dash.transactions.isEmpty)
-                SliverToBoxAdapter(
-                  child: EmptyState(
-                    art: ThemeArtKind.history,
-                    icon: AppIcons.receipt,
-                    title: 'Belum ada transaksi',
-                    message:
-                        'Tidak ada pengeluaran tercatat pada periode ini. Coba periode lain dengan tombol cari.',
-                  ),
-                )
-              else if (items.isEmpty)
-                SliverToBoxAdapter(
-                  child: EmptyState(
-                    art: ThemeArtKind.tags,
-                    icon: AppIcons.search,
-                    title: 'Tidak ada hasil',
-                    message:
-                        'Tidak ada transaksi yang cocok dengan pencarian atau filter kategori Anda.',
-                    actionLabel: 'Hapus filter',
-                    onAction: () => _clearFilters(dash),
-                  ),
-                )
-              else
                 SliverPadding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (BuildContext context, int index) {
-                        final TransactionModel transaction = items[index];
-                        return FadeSlideIn(
-                          key: ValueKey<int?>(transaction.id),
-                          delay: Duration(
-                              milliseconds: 30 * (index < 10 ? index : 10)),
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: TransactionCard(
-                              transaction: transaction,
-                              amount: dash.hasCategoryFilter
-                                  ? dash.filteredAmountOf(transaction)
-                                  : null,
-                              extraCategories:
-                                  dash.categoryCountOf(transaction) - 1,
-                              onTap: () => showTransactionDetailSheet(
-                                context,
-                                transaction,
+                    delegate: SliverChildListDelegate([
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 60),
+                        child: PeriodSelector(
+                          period: dash.period,
+                          canGoNext: dash.canGoNext,
+                          onPrevious: dash.goToPrevious,
+                          onNext: dash.goToNext,
+                          onSearch: () => showPeriodSearchSheet(context),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      FadeSlideIn(
+                        delay: const Duration(milliseconds: 120),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: dash.setSearchQuery,
+                          textInputAction: TextInputAction.search,
+                          decoration: InputDecoration(
+                            hintText: 'Cari nama toko...',
+                            prefixIcon: Icon(
+                              AppIcons.search,
+                              size: 20,
+                              color: AppColors.coolGray,
+                            ),
+                            suffixIcon: dash.searchQuery.isEmpty
+                                ? null
+                                : IconButton(
+                                    tooltip: 'Hapus pencarian',
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      dash.setSearchQuery('');
+                                    },
+                                    icon: Icon(AppIcons.close, size: 18),
+                                  ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                    ]),
+                  ),
+                ),
+                if (dash.categorySummaries.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: FadeSlideIn(
+                      delay: const Duration(milliseconds: 180),
+                      child: CategoryFilterBar(
+                        categories: dash.categorySummaries,
+                        selectedIds: dash.categoryFilter,
+                        onToggle: dash.toggleCategoryFilter,
+                        onClear: dash.clearCategoryFilter,
+                      ),
+                    ),
+                  ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.emeraldTint,
+                        borderRadius: BorderRadius.circular(AppRadius.card),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(AppIcons.receipt,
+                              size: 18, color: AppColors.emeraldDeep),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${items.length} transaksi'
+                              '${dash.hasCategoryFilter ? '  •  kategori terpilih' : ''}',
+                              style: textTheme.labelLarge?.copyWith(
+                                color: AppColors.emeraldDeep,
                               ),
                             ),
                           ),
-                        );
-                      },
-                      childCount: items.length,
+                          AnimatedCounter(
+                            value: dash.filteredTotal,
+                            formatter: AppFormatters.rupiah,
+                            style: AppTextStyles.amount(
+                              size: 15,
+                              color: AppColors.emeraldDeep,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-            ],
+                if (dash.transactions.isEmpty)
+                  SliverToBoxAdapter(
+                    child: EmptyState(
+                      art: ThemeArtKind.history,
+                      icon: AppIcons.receipt,
+                      title: 'Belum ada transaksi',
+                      message:
+                          'Tidak ada pengeluaran tercatat pada periode ini. Coba periode lain dengan tombol cari.',
+                    ),
+                  )
+                else if (items.isEmpty)
+                  SliverToBoxAdapter(
+                    child: EmptyState(
+                      art: ThemeArtKind.tags,
+                      icon: AppIcons.search,
+                      title: 'Tidak ada hasil',
+                      message:
+                          'Tidak ada transaksi yang cocok dengan pencarian atau filter kategori Anda.',
+                      actionLabel: 'Hapus filter',
+                      onAction: () => _clearFilters(dash),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (BuildContext context, int index) {
+                          final TransactionModel transaction = items[index];
+                          return FadeSlideIn(
+                            key: ValueKey<int?>(transaction.id),
+                            delay: Duration(
+                                milliseconds: 30 * (index < 10 ? index : 10)),
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: TransactionCard(
+                                transaction: transaction,
+                                amount: dash.hasCategoryFilter
+                                    ? dash.filteredAmountOf(transaction)
+                                    : null,
+                                extraCategories:
+                                    dash.categoryCountOf(transaction) - 1,
+                                onTap: () => showTransactionDetailSheet(
+                                  context,
+                                  transaction,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        childCount: items.length,
+                      ),
+                    ),
+                  ),
+                const SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.lg)),
+              ],
+            ),
           ),
         ),
       ),

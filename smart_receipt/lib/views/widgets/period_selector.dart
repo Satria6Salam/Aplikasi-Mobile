@@ -16,6 +16,7 @@ class PeriodSelector extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     required this.onSearch,
+    this.onDark = false,
   });
 
   final DashboardPeriod period;
@@ -23,6 +24,9 @@ class PeriodSelector extends StatelessWidget {
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final VoidCallback onSearch;
+
+  /// True di atas latar hijau gelap.
+  final bool onDark;
 
   String get _caption {
     switch (period.mode) {
@@ -39,16 +43,19 @@ class PeriodSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final TextTheme textTheme = Theme.of(context).textTheme;
     final String label = AppFormatters.period(period);
+    final Color fg = onDark ? AppColors.white : AppColors.slateDark;
+    final Color accent =
+        onDark ? AppColors.emeraldLight : AppColors.emeraldDark;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: AppDecorations.card(),
+      decoration: onDark ? AppDecorations.glass() : AppDecorations.card(),
       child: Row(
         children: [
           IconButton(
             tooltip: 'Periode sebelumnya',
             onPressed: onPrevious,
-            icon: Icon(AppIcons.chevronLeft),
+            icon: Icon(AppIcons.chevronLeft, color: fg),
           ),
           Expanded(
             child: InkWell(
@@ -69,7 +76,7 @@ class PeriodSelector extends StatelessWidget {
                       Text(
                         _caption,
                         style: textTheme.labelMedium?.copyWith(
-                          color: AppColors.emeraldDark,
+                          color: accent,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -78,7 +85,7 @@ class PeriodSelector extends StatelessWidget {
                         textAlign: TextAlign.center,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: textTheme.titleMedium,
+                        style: textTheme.titleMedium?.copyWith(color: fg),
                       ),
                     ],
                   ),
@@ -89,14 +96,14 @@ class PeriodSelector extends StatelessWidget {
           IconButton(
             tooltip: 'Cari periode',
             onPressed: onSearch,
-            icon: Icon(AppIcons.search, color: AppColors.emeraldDark),
+            icon: Icon(AppIcons.search, color: accent),
           ),
           IconButton(
             tooltip: 'Periode berikutnya',
             onPressed: canGoNext ? onNext : null,
             icon: Icon(
               AppIcons.chevronRight,
-              color: canGoNext ? AppColors.slateDark : AppColors.border,
+              color: canGoNext ? fg : fg.withValues(alpha: 0.3),
             ),
           ),
         ],

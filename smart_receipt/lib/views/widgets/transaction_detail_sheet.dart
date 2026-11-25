@@ -101,7 +101,7 @@ class _TransactionDetailSheetState extends State<_TransactionDetailSheet> {
         maxHeight: MediaQuery.of(context).size.height * 0.9,
       ),
       decoration: const BoxDecoration(
-        color: AppColors.white,
+        color: AppColors.surface,
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppRadius.cardLarge),
         ),

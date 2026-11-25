@@ -11,7 +11,7 @@ import '../widgets/animated_backdrop.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_textfield.dart';
 import '../widgets/fade_slide_in.dart';
-import '../widgets/hero_scene.dart';
+import '../widgets/auth_hero.dart';
 import '../widgets/message_banner.dart';
 import '../widgets/password_strength_meter.dart';
 
@@ -94,25 +94,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ClipRRect(
                         borderRadius:
                             BorderRadius.circular(AppRadius.cardLarge),
-                        child: const HeroScene(height: 170),
+                        child: const AuthHero(height: 190),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       FadeSlideIn(
                         offset: const Offset(0, 0.08),
                         child: Container(
                           padding: const EdgeInsets.all(AppSpacing.lg),
-                          decoration: BoxDecoration(
-                            color: AppColors.white,
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.cardLarge),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x1416855A),
-                                blurRadius: 30,
-                                offset: Offset(0, 12),
-                              ),
-                            ],
-                          ),
+                          decoration:
+                              AppDecorations.card(radius: AppRadius.cardLarge),
                           child: Form(
                             key: _formKey,
                             autovalidateMode:

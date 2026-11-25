@@ -23,9 +23,13 @@ class QuickAction {
 
 /// Baris aksi cepat seperti pada aplikasi keuangan: Scan, Catat, Anggaran, ...
 class QuickActionsRow extends StatelessWidget {
-  const QuickActionsRow({super.key, required this.actions});
+  const QuickActionsRow(
+      {super.key, required this.actions, this.onDark = false});
 
   final List<QuickAction> actions;
+
+  /// True di atas latar hijau gelap: tombol kaca, aksi utama berwarna lime.
+  final bool onDark;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +38,9 @@ class QuickActionsRow extends StatelessWidget {
       children: [
         for (int i = 0; i < actions.length; i++) ...[
           if (i > 0) const SizedBox(width: 10),
-          Expanded(child: _ActionButton(action: actions[i], index: i)),
+          Expanded(
+              child:
+                  _ActionButton(action: actions[i], index: i, onDark: onDark)),
         ],
       ],
     );
@@ -42,10 +48,15 @@ class QuickActionsRow extends StatelessWidget {
 }
 
 class _ActionButton extends StatelessWidget {
-  const _ActionButton({required this.action, required this.index});
+  const _ActionButton({
+    required this.action,
+    required this.index,
+    required this.onDark,
+  });
 
   final QuickAction action;
   final int index;
+  final bool onDark;
 
   @override
   Widget build(BuildContext context) {
@@ -66,35 +77,59 @@ class _ActionButton extends StatelessWidget {
               AspectRatio(
                 aspectRatio: 1.15,
                 child: Container(
-                  decoration: BoxDecoration(
-                    gradient: hi ? AppColors.cardGradient : null,
-                    color: hi ? null : AppColors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: hi
-                        ? <BoxShadow>[
-                            BoxShadow(
-                              color:
-                                  AppColors.emeraldDeep.withValues(alpha: 0.3),
-                              blurRadius: 14,
-                              offset: const Offset(0, 6),
-                            ),
-                          ]
-                        : AppDecorations.softShadow,
-                  ),
+                  decoration: onDark
+                      ? (hi
+                          ? BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [AppColors.lime, AppColors.limeDeep],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(22),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x55C6F432),
+                                  blurRadius: 18,
+                                  offset: Offset(0, 6),
+                                ),
+                              ],
+                            )
+                          : AppDecorations.glass(radius: 22))
+                      : BoxDecoration(
+                          gradient: hi ? AppColors.cardGradient : null,
+                          color: hi ? null : AppColors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: hi
+                              ? <BoxShadow>[
+                                  BoxShadow(
+                                    color: AppColors.emeraldDeep
+                                        .withValues(alpha: 0.3),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ]
+                              : AppDecorations.softShadow,
+                        ),
                   alignment: Alignment.center,
                   child: Container(
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: hi
-                          ? AppColors.white.withValues(alpha: 0.18)
-                          : AppColors.mint,
+                      color: onDark
+                          ? (hi
+                              ? AppColors.heroBottom.withValues(alpha: 0.14)
+                              : AppColors.white.withValues(alpha: 0.16))
+                          : (hi
+                              ? AppColors.white.withValues(alpha: 0.18)
+                              : AppColors.mint),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       action.icon,
                       size: 19,
-                      color: hi ? AppColors.white : AppColors.emeraldDeep,
+                      color: onDark
+                          ? (hi ? AppColors.heroBottom : AppColors.white)
+                          : (hi ? AppColors.white : AppColors.emeraldDeep),
                     ),
                   ),
                 ),
@@ -105,7 +140,7 @@ class _ActionButton extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.slateDark,
+                      color: onDark ? AppColors.white : AppColors.slateDark,
                       fontWeight: FontWeight.w600,
                     ),
               ),

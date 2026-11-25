@@ -43,7 +43,7 @@ class AppBottomNav extends StatelessWidget {
     }
 
     return Container(
-      color: AppColors.offWhite,
+      color: Colors.transparent,
       child: SafeArea(
         top: false,
         child: Padding(
@@ -60,16 +60,20 @@ class AppBottomNav extends StatelessWidget {
                   child: Container(
                     height: 68,
                     decoration: BoxDecoration(
-                      color: AppColors.white,
+                      gradient: const LinearGradient(
+                        colors: [AppColors.heroTop, AppColors.heroBottom],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: const [
                         BoxShadow(
-                          color: Color(0x240F172A),
+                          color: Color(0x4D062B1E),
                           blurRadius: 28,
                           offset: Offset(0, 10),
                         ),
                       ],
-                      border: Border.all(color: const Color(0x0F0F172A)),
+                      border: Border.all(color: AppColors.glassBorder),
                     ),
                     child: Row(
                       children: [
@@ -90,7 +94,7 @@ class AppBottomNav extends StatelessWidget {
                     child: Text(
                       'Scan',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: AppColors.emeraldDeep,
+                            color: AppColors.white,
                             fontWeight: FontWeight.w700,
                             fontSize: 11,
                           ),
@@ -147,7 +151,7 @@ class _NavItem extends StatelessWidget {
             width: selected ? 52 : 40,
             height: 32,
             decoration: BoxDecoration(
-              color: selected ? AppColors.emeraldTint : Colors.transparent,
+              color: selected ? const Color(0x26C6F432) : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
             ),
             child: AnimatedScale(
@@ -157,7 +161,7 @@ class _NavItem extends StatelessWidget {
               child: Icon(
                 spec.icon,
                 size: 22,
-                color: selected ? AppColors.emeraldDark : AppColors.coolGray,
+                color: selected ? AppColors.lime : const Color(0xB3FFFFFF),
               ),
             ),
           ),
@@ -167,7 +171,7 @@ class _NavItem extends StatelessWidget {
             style: (textTheme.labelMedium ?? const TextStyle()).copyWith(
               fontSize: 11,
               fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-              color: selected ? AppColors.emeraldDeep : AppColors.coolGray,
+              color: selected ? AppColors.white : const Color(0xB3FFFFFF),
             ),
             child: Text(spec.label),
           ),
@@ -242,14 +246,11 @@ class _ScanButtonState extends State<_ScanButton>
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF34C38A),
-                  Color(0xFF16855A),
-                  Color(0xFF0F6B47)
-                ],
+                colors: [AppColors.lime, AppColors.limeDeep],
               ),
             ),
-            child: Icon(AppIcons.scanLine, color: AppColors.white, size: 28),
+            child:
+                Icon(AppIcons.scanLine, color: AppColors.heroBottom, size: 28),
           ),
         ),
       ),
