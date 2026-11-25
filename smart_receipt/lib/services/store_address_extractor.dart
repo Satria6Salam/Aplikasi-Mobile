@@ -54,7 +54,12 @@ class StoreAddress {
     this.phone,
     this.rawLines = const <String>[],
     this.confidence = 0,
+    this.freeText,
   });
+
+  /// Alamat apa adanya (sudah dirapikan) bila komponennya tidak dapat
+  /// dipecah, supaya kolom alamat tetap terisi dan bisa diperbaiki pengguna.
+  final String? freeText;
 
   /// Nama cabang (mis. "Urek Urek" pada struk Indomaret).
   final String? branchName;
@@ -84,12 +89,14 @@ class StoreAddress {
 
   static const StoreAddress empty = StoreAddress();
 
-  bool get isEmpty =>
-      street == null &&
-      village == null &&
-      district == null &&
-      city == null &&
-      postalCode == null;
+  bool get hasComponents =>
+      street != null ||
+      village != null ||
+      district != null ||
+      city != null ||
+      postalCode != null;
+
+  bool get isEmpty => !hasComponents && (freeText ?? '').isEmpty;
 
   bool get isNotEmpty => !isEmpty;
 
@@ -99,14 +106,14 @@ class StoreAddress {
 
   /// Alamat lengkap untuk ditampilkan dan disimpan.
   String get fullAddress {
+    if (!hasComponents) return freeText ?? '';
     final String? streetPart = street == null
         ? null
         : (houseNumber == null ? street : '$street No. $houseNumber');
     final String? districtPart =
         district == null ? null : 'Kecamatan $district';
-    final String? cityPart = city == null
-        ? null
-        : (postalCode == null ? city : '$city $postalCode');
+    final String? cityPart =
+        city == null ? null : (postalCode == null ? city : '$city $postalCode');
     return <String?>[
       streetPart,
       rtRw,
@@ -136,6 +143,11 @@ class StoreAddress {
       }
     }
 
+    final String? free = freeText;
+    if (!hasComponents && free != null && free.isNotEmpty) {
+      add(<String?>[free], LocationPrecision.street);
+      return queries;
+    }
     // Catatan dari uji API sungguhan: Nominatim mewajibkan SEMUA kata cocok,
     // sehingga kueri dibuat pendek, dan awalan "Kecamatan" justru membuat
     // hasil kosong ("Gondanglegi, Kabupaten Malang" berhasil, sedangkan
@@ -192,6 +204,7 @@ class StoreAddress {
       phone: phone,
       rawLines: rawLines,
       confidence: confidence ?? this.confidence,
+      freeText: freeText,
     );
   }
 
@@ -203,43 +216,183 @@ class StoreAddress {
 /// tanpa kata kunci dan memperbaiki salah baca OCR ("HALAG" -> "Malang").
 class _Gazetteer {
   static const List<String> cities = <String>[
-    'Jakarta Pusat', 'Jakarta Utara', 'Jakarta Barat', 'Jakarta Selatan',
-    'Jakarta Timur', 'Jakarta', 'Bogor', 'Depok', 'Tangerang',
-    'Tangerang Selatan', 'Bekasi', 'Bandung', 'Bandung Barat', 'Cimahi',
-    'Sumedang', 'Garut', 'Tasikmalaya', 'Ciamis', 'Cirebon', 'Indramayu',
-    'Karawang', 'Purwakarta', 'Subang', 'Sukabumi', 'Cianjur', 'Serang',
-    'Cilegon', 'Pandeglang', 'Lebak', 'Semarang', 'Salatiga', 'Surakarta',
-    'Solo', 'Magelang', 'Pekalongan', 'Tegal', 'Brebes', 'Kudus', 'Jepara',
-    'Demak', 'Pati', 'Rembang', 'Blora', 'Klaten', 'Boyolali', 'Sukoharjo',
-    'Karanganyar', 'Sragen', 'Wonogiri', 'Purwokerto', 'Banyumas', 'Cilacap',
-    'Kebumen', 'Purworejo', 'Wonosobo', 'Temanggung', 'Kendal', 'Batang',
-    'Yogyakarta', 'Sleman', 'Bantul', 'Kulon Progo', 'Gunungkidul',
-    'Surabaya', 'Sidoarjo', 'Gresik', 'Mojokerto', 'Jombang', 'Malang',
-    'Batu', 'Pasuruan', 'Probolinggo', 'Lumajang', 'Jember', 'Banyuwangi',
-    'Bondowoso', 'Situbondo', 'Kediri', 'Blitar', 'Tulungagung',
-    'Trenggalek', 'Nganjuk', 'Madiun', 'Magetan', 'Ngawi', 'Ponorogo',
-    'Pacitan', 'Bojonegoro', 'Tuban', 'Lamongan', 'Bangkalan', 'Sampang',
-    'Pamekasan', 'Sumenep', 'Denpasar', 'Badung', 'Gianyar', 'Tabanan',
-    'Buleleng', 'Mataram', 'Kupang', 'Medan', 'Binjai', 'Deli Serdang',
-    'Pematangsiantar', 'Banda Aceh', 'Padang', 'Bukittinggi', 'Pekanbaru',
-    'Batam', 'Tanjungpinang', 'Jambi', 'Palembang', 'Bengkulu',
-    'Bandar Lampung', 'Pangkalpinang', 'Pontianak', 'Singkawang',
-    'Palangkaraya', 'Banjarmasin', 'Banjarbaru', 'Balikpapan', 'Samarinda',
-    'Bontang', 'Tarakan', 'Makassar', 'Gowa', 'Maros', 'Parepare', 'Palu',
-    'Kendari', 'Manado', 'Bitung', 'Gorontalo', 'Mamuju', 'Ambon',
-    'Ternate', 'Jayapura', 'Sorong', 'Merauke',
+    'Jakarta Pusat',
+    'Jakarta Utara',
+    'Jakarta Barat',
+    'Jakarta Selatan',
+    'Jakarta Timur',
+    'Jakarta',
+    'Bogor',
+    'Depok',
+    'Tangerang',
+    'Tangerang Selatan',
+    'Bekasi',
+    'Bandung',
+    'Bandung Barat',
+    'Cimahi',
+    'Sumedang',
+    'Garut',
+    'Tasikmalaya',
+    'Ciamis',
+    'Cirebon',
+    'Indramayu',
+    'Karawang',
+    'Purwakarta',
+    'Subang',
+    'Sukabumi',
+    'Cianjur',
+    'Serang',
+    'Cilegon',
+    'Pandeglang',
+    'Lebak',
+    'Semarang',
+    'Salatiga',
+    'Surakarta',
+    'Solo',
+    'Magelang',
+    'Pekalongan',
+    'Tegal',
+    'Brebes',
+    'Kudus',
+    'Jepara',
+    'Demak',
+    'Pati',
+    'Rembang',
+    'Blora',
+    'Klaten',
+    'Boyolali',
+    'Sukoharjo',
+    'Karanganyar',
+    'Sragen',
+    'Wonogiri',
+    'Purwokerto',
+    'Banyumas',
+    'Cilacap',
+    'Kebumen',
+    'Purworejo',
+    'Wonosobo',
+    'Temanggung',
+    'Kendal',
+    'Batang',
+    'Yogyakarta',
+    'Sleman',
+    'Bantul',
+    'Kulon Progo',
+    'Gunungkidul',
+    'Surabaya',
+    'Sidoarjo',
+    'Gresik',
+    'Mojokerto',
+    'Jombang',
+    'Malang',
+    'Batu',
+    'Pasuruan',
+    'Probolinggo',
+    'Lumajang',
+    'Jember',
+    'Banyuwangi',
+    'Bondowoso',
+    'Situbondo',
+    'Kediri',
+    'Blitar',
+    'Tulungagung',
+    'Trenggalek',
+    'Nganjuk',
+    'Madiun',
+    'Magetan',
+    'Ngawi',
+    'Ponorogo',
+    'Pacitan',
+    'Bojonegoro',
+    'Tuban',
+    'Lamongan',
+    'Bangkalan',
+    'Sampang',
+    'Pamekasan',
+    'Sumenep',
+    'Denpasar',
+    'Badung',
+    'Gianyar',
+    'Tabanan',
+    'Buleleng',
+    'Mataram',
+    'Kupang',
+    'Medan',
+    'Binjai',
+    'Deli Serdang',
+    'Pematangsiantar',
+    'Banda Aceh',
+    'Padang',
+    'Bukittinggi',
+    'Pekanbaru',
+    'Batam',
+    'Tanjungpinang',
+    'Jambi',
+    'Palembang',
+    'Bengkulu',
+    'Bandar Lampung',
+    'Pangkalpinang',
+    'Pontianak',
+    'Singkawang',
+    'Palangkaraya',
+    'Banjarmasin',
+    'Banjarbaru',
+    'Balikpapan',
+    'Samarinda',
+    'Bontang',
+    'Tarakan',
+    'Makassar',
+    'Gowa',
+    'Maros',
+    'Parepare',
+    'Palu',
+    'Kendari',
+    'Manado',
+    'Bitung',
+    'Gorontalo',
+    'Mamuju',
+    'Ambon',
+    'Ternate',
+    'Jayapura',
+    'Sorong',
+    'Merauke',
   ];
 
   static const List<String> provinces = <String>[
-    'DKI Jakarta', 'Jawa Barat', 'Jawa Tengah', 'Jawa Timur',
-    'DI Yogyakarta', 'Banten', 'Bali', 'Nusa Tenggara Barat',
-    'Nusa Tenggara Timur', 'Aceh', 'Sumatera Utara', 'Sumatera Barat',
-    'Sumatera Selatan', 'Riau', 'Kepulauan Riau', 'Jambi', 'Bengkulu',
-    'Lampung', 'Bangka Belitung', 'Kalimantan Barat', 'Kalimantan Tengah',
-    'Kalimantan Selatan', 'Kalimantan Timur', 'Kalimantan Utara',
-    'Sulawesi Utara', 'Sulawesi Tengah', 'Sulawesi Selatan',
-    'Sulawesi Tenggara', 'Sulawesi Barat', 'Gorontalo', 'Maluku',
-    'Maluku Utara', 'Papua', 'Papua Barat',
+    'DKI Jakarta',
+    'Jawa Barat',
+    'Jawa Tengah',
+    'Jawa Timur',
+    'DI Yogyakarta',
+    'Banten',
+    'Bali',
+    'Nusa Tenggara Barat',
+    'Nusa Tenggara Timur',
+    'Aceh',
+    'Sumatera Utara',
+    'Sumatera Barat',
+    'Sumatera Selatan',
+    'Riau',
+    'Kepulauan Riau',
+    'Jambi',
+    'Bengkulu',
+    'Lampung',
+    'Bangka Belitung',
+    'Kalimantan Barat',
+    'Kalimantan Tengah',
+    'Kalimantan Selatan',
+    'Kalimantan Timur',
+    'Kalimantan Utara',
+    'Sulawesi Utara',
+    'Sulawesi Tengah',
+    'Sulawesi Selatan',
+    'Sulawesi Tenggara',
+    'Sulawesi Barat',
+    'Gorontalo',
+    'Maluku',
+    'Maluku Utara',
+    'Papua',
+    'Papua Barat',
   ];
 }
 
@@ -256,20 +409,22 @@ class _Line {
 class StoreAddressExtractor {
   const StoreAddressExtractor();
 
-  static const int _headerLimit = 16;
+  static const int _headerLimit = 22;
+  static const int _footerLimit = 12;
 
   // ------------------------------------------------------------- pola baris
   static final RegExp _street = RegExp(
-      r'(?:^|[\s,(])(?:jalan|jln|j[li1])\b\.?|\bjl\.', caseSensitive: false);
+      r'(?:^|[\s,(])(?:jalan|jln|j[li1])\b\.?|\bjl\.',
+      caseSensitive: false);
   static final RegExp _boulevard =
       RegExp(r'\b(?:boulevard|blvd|bulevar)\b', caseSensitive: false);
-  static final RegExp _houseNo =
-      RegExp(r'\bno\.?\s*\d', caseSensitive: false);
-  static final RegExp _rtRwKey =
-      RegExp(r'\brt\b\.?\s*\d|\brw\b\.?\s*\d|\brt\s*/\s*rw\b',
-          caseSensitive: false);
+  static final RegExp _houseNo = RegExp(r'\bno\.?\s*\d', caseSensitive: false);
+  static final RegExp _rtRwKey = RegExp(
+      r'\brt\b\.?\s*\d|\brw\b\.?\s*\d|\brt\s*/\s*rw\b',
+      caseSensitive: false);
   static final RegExp _villageKey = RegExp(
-      r'\b(?:kel|kelurahan|desa|ds|dusun|dsn)\b\.?', caseSensitive: false);
+      r'\b(?:kel|kelurahan|desa|ds|dusun|dsn)\b\.?',
+      caseSensitive: false);
   static final RegExp _districtKey =
       RegExp(r'\b(?:kec|kecamatan|kcm)\b\.?', caseSensitive: false);
   static final RegExp _cityKey = RegExp(
@@ -278,8 +433,12 @@ class StoreAddressExtractor {
   static final RegExp _provinceKey =
       RegExp(r'\b(?:prov|provinsi|propinsi)\b\.?', caseSensitive: false);
   static final RegExp _buildingKey = RegExp(
-      r'\b(?:ruko|rukan|komp|komplek|kompleks|perum|perumahan|blok|gedung|gd|mall|mal|plaza|pasar|ps|square|apartemen|tower|kav|kavling)\b\.?',
+      r'\b(?:ruko|rukan|komp|komplek|kompleks|perum|perumahan|blok|gedung|gd|mall|mal|plaza|pasar|ps|square|apartemen|tower|kav|kavling|gang|gg|kampung|kp|kawasan|terminal|stasiun|bandara|pertokoan|lantai)\b\.?',
       caseSensitive: false);
+  static final RegExp _addressLabel = RegExp(
+      r'^\s*(?:alamat|addr|address|lokasi)\b\s*[:\-]?\s*',
+      caseSensitive: false);
+  static final RegExp _priceTail = RegExp(r'\s\d{4,}(?:[.,]\d{1,2})?$');
   static final RegExp _postal = RegExp(r'(?<![\d.,])(\d{5})(?![\d.,])');
   static final RegExp _amount = RegExp(r'\d{1,3}(?:[.,]\d{3})+(?![\d])');
 
@@ -288,8 +447,9 @@ class StoreAddressExtractor {
       caseSensitive: false);
   static final RegExp _npwp =
       RegExp(r'\bnp[wv]{1,2}p\b|\bnpwp\b', caseSensitive: false);
-  static final RegExp _web =
-      RegExp(r'www|http|\.com|\.co\.id|@|instagram|ig\s*:', caseSensitive: false);
+  static final RegExp _web = RegExp(
+      r'www|http|\.com|\.co\.id|@|instagram|ig\s*:',
+      caseSensitive: false);
   static final RegExp _otherNoise = RegExp(
       r'\b(?:kasir|cashier|struk|faktur|invoice|no\.?\s*(?:trx|transaksi|nota|struk)|member|selamat|welcome|terima\s*kasih|thank)\b',
       caseSensitive: false);
@@ -310,7 +470,21 @@ class StoreAddressExtractor {
   /// Mengambil alamat dari [rawText]. [merchantName] dipakai agar baris nama
   /// toko tidak dianggap nama cabang.
   StoreAddress extract(String rawText, {String? merchantName}) {
-    final List<_Line> lines = _header(rawText);
+    final List<String> raw = _rawLines(rawText);
+    if (raw.isEmpty) return StoreAddress.empty;
+
+    // Alamat umumnya di kepala struk; sebagian struk menaruhnya di kaki.
+    final StoreAddress fromHeader =
+        _extractFrom(_header(raw), merchantName, minScore: 2);
+    if (fromHeader.isNotEmpty) return fromHeader;
+    return _extractFrom(_footer(raw), merchantName, minScore: 5);
+  }
+
+  StoreAddress _extractFrom(
+    List<_Line> lines,
+    String? merchantName, {
+    required double minScore,
+  }) {
     if (lines.isEmpty) return StoreAddress.empty;
 
     for (final _Line line in lines) {
@@ -326,9 +500,18 @@ class StoreAddressExtractor {
             orElse: () => _Line(-1, ''))
         .index;
     final List<_Line> best = _chooseBlock(blocks, lines, npwpIndex);
+    final double blockScore =
+        best.fold<double>(0, (double sum, _Line l) => sum + l.score);
+    if (blockScore < minScore) return StoreAddress.empty;
 
     final StoreAddress parsed = _parseComponents(best);
-    if (parsed.isEmpty) return StoreAddress.empty;
+    final String freeText = parsed.hasComponents
+        ? ''
+        : best
+            .map((_Line l) => _titleCase(_clean(_normalize(l.text))))
+            .where((String t) => t.isNotEmpty)
+            .join(', ');
+    if (!parsed.hasComponents && freeText.isEmpty) return StoreAddress.empty;
 
     final String? branch = _branchBefore(lines, best.first, merchantName);
     final String? phone = _phoneNear(lines, best);
@@ -344,41 +527,70 @@ class StoreAddressExtractor {
       postalCode: parsed.postalCode,
       phone: phone,
       rawLines: best.map((_Line l) => l.text).toList(),
+      freeText: freeText.isEmpty ? null : freeText,
     );
     return withExtras.copyWith(confidence: _confidence(withExtras));
   }
 
   // ---------------------------------------------------------- kepala struk
 
-  List<_Line> _header(String rawText) {
-    final List<String> raw = rawText
-        .split(RegExp(r'\r?\n'))
-        .map((String l) => l
-            .replaceAll(RegExp(r'\.{2,}|_{2,}|-{3,}|={2,}|\*{2,}'), ' ')
-            .replaceAll(RegExp(r'\s+'), ' ')
-            .trim())
-        .where((String l) => l.isNotEmpty)
-        .toList();
+  List<String> _rawLines(String rawText) => rawText
+      .split(RegExp(r'\r?\n'))
+      .map((String l) => l
+          .replaceAll(RegExp(r'\.{2,}|_{2,}|-{3,}|={2,}|\*{2,}'), ' ')
+          .replaceAll(RegExp(r'\s+'), ' ')
+          .trim())
+      .where((String l) => l.isNotEmpty)
+      .toList();
 
+  /// Kepala struk: dari baris pertama sampai baris barang/total pertama.
+  /// Baris tanggal TIDAK mengakhiri kepala (sebagian struk menaruh tanggal
+  /// sebelum alamat); baris itu hanya dianggap derau.
+  List<_Line> _header(List<String> raw) {
     final List<_Line> out = <_Line>[];
     for (int i = 0; i < raw.length && i < _headerLimit; i++) {
       final String line = raw[i];
       final bool addressish = _score(line) >= 2;
-      // Kepala struk berakhir di baris tanggal atau baris barang/total.
-      if (!addressish && i > 0 && _date.hasMatch(line)) break;
       if (!addressish && _itemOrTotal.hasMatch(line)) break;
-      if (!addressish && _amount.hasMatch(line) && out.length >= 2) break;
+      if (!addressish && out.length >= 2 && !_phone.hasMatch(line)) {
+        if (_amount.hasMatch(line) || _priceTail.hasMatch(line)) break;
+      }
+      out.add(_Line(i, line));
+    }
+    return out;
+  }
+
+  /// Kaki struk: beberapa baris terakhir yang bukan baris harga/total.
+  List<_Line> _footer(List<String> raw) {
+    final int from = raw.length > _footerLimit ? raw.length - _footerLimit : 0;
+    final List<_Line> out = <_Line>[];
+    for (int i = from; i < raw.length; i++) {
+      final String line = raw[i];
+      final bool addressish = _score(line) >= 2;
+      if (!addressish &&
+          !_phone.hasMatch(line) &&
+          (_itemOrTotal.hasMatch(line) ||
+              _amount.hasMatch(line) ||
+              _priceTail.hasMatch(line))) {
+        out.add(_Line(i, '')..noise = true); // Penyekat antarblok.
+        continue;
+      }
       out.add(_Line(i, line));
     }
     return out;
   }
 
   bool _isNoise(String line) {
+    if (line.isEmpty) return true;
     if (_npwp.hasMatch(line) || _web.hasMatch(line)) return true;
+    // Baris tanggal/jam tanpa kata kunci alamat adalah derau.
+    if (_date.hasMatch(line) && _score(line) < 2) return true;
     if (_otherNoise.hasMatch(line)) return true;
     // Baris telepon murni (tanpa kata kunci alamat) adalah derau.
-    if (_phone.hasMatch(line) && !_street.hasMatch(line) &&
-        !_districtKey.hasMatch(line) && !_cityKey.hasMatch(line)) {
+    if (_phone.hasMatch(line) &&
+        !_street.hasMatch(line) &&
+        !_districtKey.hasMatch(line) &&
+        !_cityKey.hasMatch(line)) {
       return true;
     }
     return false;
@@ -387,6 +599,7 @@ class StoreAddressExtractor {
   /// Skor kemiripan baris dengan alamat.
   double _score(String line) {
     double s = 0;
+    if (_addressLabel.hasMatch(line)) s += 3;
     if (_street.hasMatch(line)) s += 4;
     if (_boulevard.hasMatch(line)) s += 3;
     if (_houseNo.hasMatch(line)) s += 1;
@@ -500,8 +713,8 @@ class StoreAddressExtractor {
     // "INDOMARET UREK UREK" -> "Urek Urek".
     String text = prev.text;
     if (m.isNotEmpty && p.startsWith(m)) {
-      text = text.substring(
-          text.toLowerCase().indexOf(m.split(' ').last) + m.split(' ').last.length);
+      text = text.substring(text.toLowerCase().indexOf(m.split(' ').last) +
+          m.split(' ').last.length);
     }
     final String cleaned = _titleCase(_clean(text));
     return cleaned.length < 3 ? null : cleaned;
@@ -513,7 +726,8 @@ class StoreAddressExtractor {
     for (final _Line l in lines) {
       if (l.index < from || l.index > to) continue;
       final RegExpMatch? m =
-          RegExp(r'(\(?0\d{2,4}\)?[\s-]?\d{3,4}[\s-]?\d{3,5})').firstMatch(l.text);
+          RegExp(r'(\(?0\d{2,4}\)?[\s-]?\d{3,4}[\s-]?\d{3,5})')
+              .firstMatch(l.text);
       if (m != null && _phone.hasMatch(l.text)) {
         return m.group(1)!.replaceAll(RegExp(r'\s+'), ' ').trim();
       }
@@ -564,16 +778,17 @@ class StoreAddressExtractor {
             caseSensitive: false)
         .firstMatch(text);
     if (rt != null) {
-      rtRw = 'RT ${rt.group(1)!.padLeft(2, '0')}/RW ${rt.group(2)!.padLeft(2, '0')}';
+      rtRw =
+          'RT ${rt.group(1)!.padLeft(2, '0')}/RW ${rt.group(2)!.padLeft(2, '0')}';
       text = text.replaceRange(rt.start, rt.end, ', ');
     }
 
     final String? district =
         take(RegExp('\\bKecamatan\\s+([A-Za-z][A-Za-z .\'-]*?)$stop'));
     final String? cityRaw = () {
-      final RegExpMatch? m = RegExp(
-              '\\b(Kabupaten|Kota)\\s+([A-Za-z][A-Za-z .\'-]*?)$stop')
-          .firstMatch(text);
+      final RegExpMatch? m =
+          RegExp('\\b(Kabupaten|Kota)\\s+([A-Za-z][A-Za-z .\'-]*?)$stop')
+              .firstMatch(text);
       if (m == null) return null;
       text = text.replaceRange(m.start, m.end, ', ');
       return '${m.group(1)} ${_fixCity(m.group(2)!.trim())}';
@@ -604,11 +819,20 @@ class StoreAddressExtractor {
     } else {
       // Tanpa "Jalan": pakai nama gedung/ruko sebagai patokan jalan.
       final RegExpMatch? b = RegExp(
-              '\\b((?:Ruko|Rukan|Komplek|Perumahan|Blok|Gedung|Mall|Plaza|Pasar|Square|Boulevard)\\b[^,]*)',
+              '\\b((?:Ruko|Rukan|Komplek|Perumahan|Blok|Gedung|Mall|Plaza|Pasar|Square|Boulevard|Gang|Kampung|Pertokoan|Terminal|Stasiun|Kawasan)\\b[^,]*)',
               caseSensitive: false)
           .firstMatch(text);
       if (b != null) {
-        street = _clean(b.group(1)!);
+        String body = b.group(1)!;
+        final RegExpMatch? no = RegExp(
+                r'\bNo\b\.?\s*([0-9]+[A-Za-z]?(?:\s*[-/]\s*[0-9A-Za-z]+)?)',
+                caseSensitive: false)
+            .firstMatch(body);
+        if (no != null) {
+          houseNo = no.group(1)?.replaceAll(' ', '');
+          body = body.replaceRange(no.start, no.end, ' ');
+        }
+        street = _clean(body);
         text = text.replaceRange(b.start, b.end, ', ');
       }
     }
@@ -653,10 +877,11 @@ class StoreAddressExtractor {
 
   /// Memperbaiki salah baca OCR pada kata kunci dan memperluas singkatan.
   String _normalize(String line) {
-    String s = line;
+    String s = line.replaceFirst(_addressLabel, '');
     // "JI." / "J1." / "Jln" -> "Jalan".
     s = s.replaceAllMapped(
-        RegExp(r'(^|[\s,(])(?:jalan|jln|jl|j[I1])\b\.?\s*', caseSensitive: false),
+        RegExp(r'(^|[\s,(])(?:jalan|jln|jl|j[I1])\b\.?\s*',
+            caseSensitive: false),
         (Match m) => '${m.group(1)}Jalan ');
     s = s.replaceAll(
         RegExp(r'\b(?:kab|ka[bpr]u?pat[eéf]n|kabupatn)\b\.?\s*',
@@ -684,8 +909,12 @@ class StoreAddressExtractor {
     s = s.replaceAll(
         RegExp(r'\b(?:perum|perumahan)\b\.?\s*', caseSensitive: false),
         'Perumahan ');
-    s = s.replaceAll(RegExp(r'\b(?:gd|gedung)\b\.?\s*', caseSensitive: false),
-        'Gedung ');
+    s = s.replaceAll(
+        RegExp(r'\b(?:gd|gedung)\b\.?\s*', caseSensitive: false), 'Gedung ');
+    s = s.replaceAll(
+        RegExp(r'\b(?:gg|gang)\b\.?\s*', caseSensitive: false), 'Gang ');
+    s = s.replaceAll(
+        RegExp(r'\b(?:kp|kampung)\b\.?\s*', caseSensitive: false), 'Kampung ');
     s = s.replaceAll(RegExp(r'\brt\b', caseSensitive: false), 'RT');
     s = s.replaceAll(RegExp(r'\brw\b', caseSensitive: false), 'RW');
     s = s.replaceAll(RegExp(r'\bno\b', caseSensitive: false), 'No');
@@ -707,7 +936,8 @@ class StoreAddressExtractor {
     String? best;
     for (final String name in names) {
       final String n = name.toLowerCase();
-      if (!whole && RegExp('(?:^|\\s)${RegExp.escape(n)}(?:\$|\\s)').hasMatch(t)) {
+      if (!whole &&
+          RegExp('(?:^|\\s)${RegExp.escape(n)}(?:\$|\\s)').hasMatch(t)) {
         if (best == null || n.length > best.length) best = name;
       }
     }
@@ -757,15 +987,20 @@ class StoreAddressExtractor {
       .replaceAll(RegExp(r'\s+'), ' ')
       .trim();
 
-  static const Set<String> _keepUpper = <String>{'RT', 'RW', 'DKI', 'DI', 'II', 'III', 'IV'};
+  static const Set<String> _keepUpper = <String>{
+    'RT',
+    'RW',
+    'DKI',
+    'DI',
+    'II',
+    'III',
+    'IV'
+  };
 
-  String _titleCase(String s) => s
-      .split(' ')
-      .where((String w) => w.isNotEmpty)
-      .map((String w) {
+  String _titleCase(String s) =>
+      s.split(' ').where((String w) => w.isNotEmpty).map((String w) {
         if (_keepUpper.contains(w.toUpperCase())) return w.toUpperCase();
         if (RegExp(r'\d').hasMatch(w)) return w.toUpperCase();
         return '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}';
-      })
-      .join(' ');
+      }).join(' ');
 }

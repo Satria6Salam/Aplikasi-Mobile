@@ -74,6 +74,11 @@ Future<void> main() async {
   final ShoppingPlanRepository shoppingPlanRepository =
       ShoppingPlanRepository();
 
+  // Seed akun demo (hanya mode debug) agar bisa langsung login.
+  if (kDebugMode) {
+    await _seedDemoUsers(userRepository);
+  }
+
   // Ikon dan warna kustom kategori dimuat sebelum tampilan pertama.
   CategoryPalette.applyTo(await categoryRepository.getAll());
 
@@ -318,5 +323,18 @@ class _SmartReceiptAppState extends State<SmartReceiptApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
     );
+  }
+}
+
+/// Data seed pengguna untuk pengujian login (dilewati jika email sudah ada).
+Future<void> _seedDemoUsers(UserRepository repo) async {
+  const List<(String, String, String)> seeds = <(String, String, String)>[
+    ('Demo User', 'demo@smartreceipt.com', 'Demo1234!'),
+    ('Admin', 'admin@smartreceipt.com', 'Admin1234!'),
+  ];
+  for (final (String name, String email, String password) in seeds) {
+    if (await repo.getByEmail(email) == null) {
+      await repo.register(name: name, email: email, password: password);
+    }
   }
 }

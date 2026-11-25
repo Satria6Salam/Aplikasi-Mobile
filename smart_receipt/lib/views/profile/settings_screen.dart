@@ -302,6 +302,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: () => context.push(AppRoutes.shoppingPlan),
                       ),
                       _FeatureTile(
+                        icon: AppIcons.slidersHorizontal,
+                        color: const Color(0xFF8B5CF6),
+                        title: 'Pencarian Lanjutan',
+                        subtitle: 'Cari toko, barang, tanggal, total, kategori',
+                        onTap: () => context.push(AppRoutes.search),
+                      ),
+                      _FeatureTile(
+                        icon: AppIcons.trendingUp,
+                        color: const Color(0xFFF59E0B),
+                        title: 'Bandingkan Harga',
+                        subtitle: 'Harga barang antar toko dan perubahannya',
+                        onTap: () => context.push(AppRoutes.priceCompare),
+                      ),
+                      _FeatureTile(
                         icon: AppIcons.map,
                         color: const Color(0xFFE11D48),
                         title: 'Peta Toko',

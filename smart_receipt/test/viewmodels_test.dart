@@ -156,6 +156,23 @@ class FakeTransactionRepository extends Fake implements TransactionRepository {
   }
 
   @override
+  Future<List<TransactionModel>> findSameDayAmount(
+    int userId,
+    DateTime date,
+    double total, {
+    double tolerance = 1,
+  }) async {
+    return stored
+        .where((TransactionModel t) =>
+            t.userId == userId &&
+            t.transactionDate.year == date.year &&
+            t.transactionDate.month == date.month &&
+            t.transactionDate.day == date.day &&
+            (t.totalAmount - total).abs() <= tolerance)
+        .toList();
+  }
+
+  @override
   Future<List<LabeledItem>> getTrainingSamples(
     int userId, {
     int limit = 2000,

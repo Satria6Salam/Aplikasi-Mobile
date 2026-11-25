@@ -6,6 +6,8 @@ import '../database/app_database.dart';
 import '../models/category_summary_model.dart';
 import '../models/ml_classification_model.dart';
 import '../models/ocr_result_model.dart';
+import '../models/purchase_record_model.dart';
+import '../models/transaction_filter.dart';
 import '../models/parsed_receipt_model.dart';
 import '../models/tfidf_feature_model.dart';
 import '../models/transaction_item_model.dart';
@@ -125,6 +127,177 @@ INNER JOIN ${DbTables.categories} c ON c.${CategoryCols.id} = t.${TransCols.cate
     }
     final List<Map<String, Object?>> rows =
         await db.rawQuery(sql.toString(), args);
+    return rows.map(TransactionModel.fromMap).toList();
+  }
+
+  // ------------------------------------------------------------- pencarian
+
+  static const String _escape = r" ESCAPE '\'";
+
+  /// Pola LIKE untuk satu kata; karakter khusus (% _ \) diloloskan.
+  static String _like(String token) {
+    final String escaped = token
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
+    return '%$escaped%';
+  }
+
+  static String _placeholders(int count) =>
+      List<String>.filled(count, '?').join(',');
+
+  /// Pencarian transaksi lintas periode. Setiap kata kunci harus cocok di
+  /// nama toko, cabang, alamat, catatan, atau nama barang; filter tanggal,
+  /// total struk, dan kategori (utama atau salah satu barang) bersifat DAN.
+  Future<List<TransactionModel>> searchTransactions(
+    int userId,
+    TransactionFilter filter, {
+    int limit = 300,
+  }) async {
+    final Database db = await _db;
+    final List<String> where = <String>['t.${TransCols.userId} = ?'];
+    final List<Object?> args = <Object?>[userId];
+
+    for (final String token in filter.tokens) {
+      final String like = _like(token);
+      where.add(
+        '(t.${TransCols.merchantName} LIKE ?$_escape '
+        'OR t.${TransCols.notes} LIKE ?$_escape '
+        'OR t.${TransCols.storeBranch} LIKE ?$_escape '
+        'OR t.${TransCols.storeAddress} LIKE ?$_escape '
+        'OR EXISTS (SELECT 1 FROM ${DbTables.transactionItems} i '
+        'WHERE i.${ItemCols.transactionId} = t.${TransCols.id} '
+        'AND i.${ItemCols.name} LIKE ?$_escape))',
+      );
+      args.addAll(<Object?>[like, like, like, like, like]);
+    }
+    final DateTime? from = filter.from;
+    if (from != null) {
+      where.add('t.${TransCols.transactionDate} >= ?');
+      args.add(DbDateUtils.dateToDb(from));
+    }
+    final DateTime? to = filter.to;
+    if (to != null) {
+      where.add('t.${TransCols.transactionDate} <= ?');
+      args.add(DbDateUtils.dateToDb(to));
+    }
+    final double? minTotal = filter.minTotal;
+    if (minTotal != null) {
+      where.add('t.${TransCols.totalAmount} >= ?');
+      args.add(minTotal);
+    }
+    final double? maxTotal = filter.maxTotal;
+    if (maxTotal != null) {
+      where.add('t.${TransCols.totalAmount} <= ?');
+      args.add(maxTotal);
+    }
+    if (filter.hasCategories) {
+      final List<int> ids = filter.categoryIds.toList();
+      final String marks = _placeholders(ids.length);
+      where.add(
+        '(t.${TransCols.categoryId} IN ($marks) '
+        'OR EXISTS (SELECT 1 FROM ${DbTables.transactionItems} i '
+        'WHERE i.${ItemCols.transactionId} = t.${TransCols.id} '
+        'AND i.${ItemCols.categoryId} IN ($marks)))',
+      );
+      args
+        ..addAll(ids)
+        ..addAll(ids);
+    }
+
+    final String order = switch (filter.sort) {
+      SearchSort.newest =>
+        't.${TransCols.transactionDate} DESC, t.${TransCols.id} DESC',
+      SearchSort.oldest =>
+        't.${TransCols.transactionDate} ASC, t.${TransCols.id} ASC',
+      SearchSort.highest =>
+        't.${TransCols.totalAmount} DESC, t.${TransCols.id} DESC',
+      SearchSort.lowest =>
+        't.${TransCols.totalAmount} ASC, t.${TransCols.id} DESC',
+    };
+    args.add(limit);
+
+    final List<Map<String, Object?>> rows = await db.rawQuery(
+      '$_joinedSelect WHERE ${where.join(' AND ')} ORDER BY $order LIMIT ?',
+      args,
+    );
+    return rows.map(TransactionModel.fromMap).toList();
+  }
+
+  /// Barang yang pernah dibeli beserta toko dan tanggalnya, terbaru dulu.
+  /// Kata kunci dicocokkan dengan nama barang atau nama toko; filter tanggal
+  /// dan kategori berlaku pada barangnya. Tanpa kata kunci, semua barang
+  /// dikembalikan (dipakai untuk perbandingan harga).
+  Future<List<PurchaseRecord>> searchPurchases(
+    int userId,
+    TransactionFilter filter, {
+    int limit = 500,
+  }) async {
+    final Database db = await _db;
+    final List<String> where = <String>['t.${TransCols.userId} = ?'];
+    final List<Object?> args = <Object?>[userId];
+
+    for (final String token in filter.tokens) {
+      final String like = _like(token);
+      where.add(
+        '(i.${ItemCols.name} LIKE ?$_escape '
+        'OR t.${TransCols.merchantName} LIKE ?$_escape)',
+      );
+      args.addAll(<Object?>[like, like]);
+    }
+    final DateTime? from = filter.from;
+    if (from != null) {
+      where.add('t.${TransCols.transactionDate} >= ?');
+      args.add(DbDateUtils.dateToDb(from));
+    }
+    final DateTime? to = filter.to;
+    if (to != null) {
+      where.add('t.${TransCols.transactionDate} <= ?');
+      args.add(DbDateUtils.dateToDb(to));
+    }
+    if (filter.hasCategories) {
+      final List<int> ids = filter.categoryIds.toList();
+      where.add('i.${ItemCols.categoryId} IN (${_placeholders(ids.length)})');
+      args.addAll(ids);
+    }
+    args.add(limit);
+
+    final List<Map<String, Object?>> rows = await db.rawQuery(
+      'SELECT i.*, '
+      'c.${CategoryCols.name} AS ${CategoryCols.name}, '
+      't.${TransCols.merchantName} AS ${TransCols.merchantName}, '
+      't.${TransCols.storeBranch} AS ${TransCols.storeBranch}, '
+      't.${TransCols.transactionDate} AS ${TransCols.transactionDate} '
+      'FROM ${DbTables.transactionItems} i '
+      'INNER JOIN ${DbTables.transactions} t '
+      'ON t.${TransCols.id} = i.${ItemCols.transactionId} '
+      'INNER JOIN ${DbTables.categories} c '
+      'ON c.${CategoryCols.id} = i.${ItemCols.categoryId} '
+      'WHERE ${where.join(' AND ')} '
+      'ORDER BY t.${TransCols.transactionDate} DESC, i.${ItemCols.id} DESC '
+      'LIMIT ?',
+      args,
+    );
+    return rows.map(PurchaseRecord.fromMap).toList();
+  }
+
+  /// Transaksi pengguna pada tanggal yang sama dengan total yang sama
+  /// (selisih maksimal [tolerance] rupiah); bahan deteksi struk ganda.
+  Future<List<TransactionModel>> findSameDayAmount(
+    int userId,
+    DateTime date,
+    double total, {
+    double tolerance = 1,
+  }) async {
+    final Database db = await _db;
+    final List<Map<String, Object?>> rows = await db.rawQuery(
+      '$_joinedSelect '
+      'WHERE t.${TransCols.userId} = ? '
+      'AND t.${TransCols.transactionDate} = ? '
+      'AND ABS(t.${TransCols.totalAmount} - ?) <= ? '
+      'ORDER BY t.${TransCols.id} DESC',
+      <Object?>[userId, DbDateUtils.dateToDb(date), total, tolerance],
+    );
     return rows.map(TransactionModel.fromMap).toList();
   }
 

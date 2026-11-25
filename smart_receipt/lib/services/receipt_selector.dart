@@ -58,6 +58,22 @@ class ReceiptSelector {
     return value;
   }
 
+  /// Alamat yang lebih lengkap (komponen terbanyak, lalu keyakinan tertinggi).
+  StoreAddress _betterAddress(StoreAddress first, StoreAddress second) {
+    if (first.isEmpty) return second;
+    if (second.isEmpty) return first;
+    int parts(StoreAddress a) => <Object?>[
+          a.street,
+          a.village,
+          a.district,
+          a.city,
+          a.postalCode,
+        ].where((Object? v) => v != null).length;
+    final int byParts = parts(first).compareTo(parts(second));
+    if (byParts != 0) return byParts > 0 ? first : second;
+    return first.confidence >= second.confidence ? first : second;
+  }
+
   /// Memilih bacaan dengan nilai tertinggi (foto asli menang bila seri),
   /// lalu melengkapi data utama yang kosong dari bacaan lainnya.
   ReceiptReading choose(ReceiptReading original, ReceiptReading? enhanced) {
@@ -74,6 +90,9 @@ class ReceiptSelector {
     final bool totalFromKeyword =
         a.totalAmount != null ? a.totalFromKeyword : b.totalFromKeyword;
     final List<ParsedItem> items = a.items.isNotEmpty ? a.items : b.items;
+    // Alamat dari bacaan yang lebih lengkap; bila kosong, dari bacaan lain.
+    // (Sebelumnya alamat ikut hilang tiap kali foto diperjelas dan dibaca ulang.)
+    final StoreAddress address = _betterAddress(a.address, b.address);
 
     final int found = <Object?>[merchant, date, total]
         .where((Object? value) => value != null)
@@ -91,6 +110,7 @@ class ReceiptSelector {
         items: items,
         status: status,
         totalFromKeyword: totalFromKeyword,
+        address: address,
       ),
       fromEnhancedImage: best.fromEnhancedImage,
     );

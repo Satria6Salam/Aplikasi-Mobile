@@ -10,12 +10,21 @@ class ParsedItem {
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
+    this.alternative,
   });
 
   final String name;
   final double quantity;
   final double unitPrice;
   final double totalPrice;
+
+  /// Tafsir lain untuk baris yang angkanya ambigu: struk "Roti 2 12.000"
+  /// bisa berarti 12.000 adalah subtotal (tafsir utama) atau harga satuan
+  /// (tafsir alternatif, total 24.000). Total struk menentukan mana yang benar.
+  final ParsedItem? alternative;
+
+  /// True bila angka pada baris ini bisa ditafsirkan dua cara.
+  bool get isAmbiguous => alternative != null;
 }
 
 /// Hasil Smart Parsing dari teks mentah struk.
@@ -75,23 +84,33 @@ class _Num {
 
 /// Baris barang yang dipecah menjadi teks nama dan ekor angka.
 class _Tail {
-  const _Tail(this.name, this.nums, this.hasMarker);
+  const _Tail(this.name, this.nums, this.hasMarker, [this.explicit = false]);
 
   final String name;
   final List<_Num> nums;
 
-  /// True bila ada penanda kali (x, X, @, *).
+  /// True bila ada penanda jumlah (x, X, @, *) ATAU satuan ("2 SAK").
   final bool hasMarker;
+
+  /// True hanya bila ada tanda kali yang tegas (x, X, @, *). Tanpa itu
+  /// ("2 SAK 130.000") angka terakhir lebih mungkin subtotal.
+  final bool explicit;
 }
 
 /// Hasil penafsiran angka: jumlah, harga satuan, total, dan potongan nama.
 class _Interp {
-  const _Interp(this.qty, this.unit, this.total, this.suffix);
+  const _Interp(this.qty, this.unit, this.total, this.suffix,
+      {this.altUnit, this.altTotal});
 
   final double qty;
   final double unit;
   final double total;
   final String suffix;
+
+  /// Tafsir alternatif (jumlah sama) bila angka ambigu antara subtotal
+  /// dan harga satuan.
+  final double? altUnit;
+  final double? altTotal;
 }
 
 /// Smart Parsing berbasis Regular Expression untuk mengekstrak
@@ -281,6 +300,11 @@ class ParsingService {
       if (only != null) items = <ParsedItem>[only];
     }
 
+    // Angka yang ambigu (subtotal atau harga satuan?) ditentukan oleh total
+    // struk. Harus sebelum penyaringan di bawah, karena tafsir "harga satuan"
+    // yang salah membuat total sebuah barang melampaui total belanja.
+    items = reconcileWithTotal(items, keywordTotal);
+
     // Satu barang tidak mungkin lebih mahal dari total belanja. Baris seperti
     // itu hampir pasti salah baca (kode pos, nomor telepon, nomor transaksi).
     if (keywordTotal != null && keywordTotal > 0) {
@@ -308,6 +332,87 @@ class ParsingService {
       totalFromKeyword: keywordTotal != null,
       address: const StoreAddressExtractor()
           .extract(rawText, merchantName: merchant),
+    );
+  }
+
+  // ------------------------------------------------- cocokkan dengan total
+
+  /// Toleransi selisih (rupiah) saat mencocokkan jumlah barang dengan total.
+  static double _matchTolerance(double total) => 1 + total * 0.0005;
+
+  /// Menentukan tafsir baris ambigu memakai total struk.
+  ///
+  /// Bila jumlah harga barang sudah sama dengan total, tafsir utama dipakai.
+  /// Bila tidak, dicari kombinasi baris yang ditafsirkan ulang (subtotal <->
+  /// harga satuan) sehingga jumlahnya PERSIS sama dengan total; kombinasi
+  /// dengan perubahan paling sedikit menang. Tanpa kombinasi yang cocok
+  /// (mis. ada pajak atau diskon global), hasil utama dibiarkan.
+  List<ParsedItem> reconcileWithTotal(List<ParsedItem> items, double? total) {
+    if (total == null || total <= 0) return items;
+    final List<int> ambiguous = <int>[
+      for (int i = 0; i < items.length; i++)
+        if (items[i].isAmbiguous) i,
+    ];
+    if (ambiguous.isEmpty) return items;
+
+    final double tolerance = _matchTolerance(total);
+    final double current =
+        items.fold<double>(0, (double s, ParsedItem i) => s + i.totalPrice);
+    if ((current - total).abs() <= tolerance) return items;
+
+    final List<double> deltas = <double>[
+      for (final int i in ambiguous)
+        items[i].alternative!.totalPrice - items[i].totalPrice,
+    ];
+
+    int? best;
+    int bestFlips = 1 << 30;
+    final int n = ambiguous.length;
+    if (n <= 14) {
+      for (int mask = 1; mask < (1 << n); mask++) {
+        double sum = current;
+        int flips = 0;
+        for (int b = 0; b < n; b++) {
+          if (mask & (1 << b) != 0) {
+            sum += deltas[b];
+            flips++;
+          }
+        }
+        if ((sum - total).abs() <= tolerance && flips < bestFlips) {
+          best = mask;
+          bestFlips = flips;
+        }
+      }
+    } else {
+      // Terlalu banyak baris ambigu: coba semua sekaligus dan satu per satu.
+      final int all = (1 << n) - 1;
+      final double allSum = current + deltas.fold<double>(0, (a, b) => a + b);
+      if ((allSum - total).abs() <= tolerance) best = all;
+    }
+    if (best == null) return items;
+
+    final List<ParsedItem> resolved = List<ParsedItem>.of(items);
+    for (int b = 0; b < n; b++) {
+      if (best & (1 << b) != 0) {
+        final int index = ambiguous[b];
+        resolved[index] = items[index].alternative!;
+      }
+    }
+    return resolved;
+  }
+
+  /// Memotong harga sebuah barang (baris DISC di bawahnya), tafsir
+  /// alternatifnya ikut dipotong.
+  ParsedItem _applyCut(ParsedItem item, double cut) {
+    final double total = item.totalPrice - cut;
+    if (total < _minAmount) return item;
+    final ParsedItem? alt = item.alternative;
+    return ParsedItem(
+      name: item.name,
+      quantity: item.quantity,
+      unitPrice: total / item.quantity,
+      totalPrice: total,
+      alternative: alt == null ? null : _applyCut(alt, cut),
     );
   }
 
@@ -630,8 +735,8 @@ class ParsingService {
         // (mis. baris cabang toko) diabaikan bila jumlahnya berlebih.
         final List<String> usedNames = names.sublist(names.length - count);
         for (int k = 0; k < count; k++) {
-          final ParsedItem? item =
-              _buildItem(usedNames[k], prices[k].nums, prices[k].hasMarker);
+          final ParsedItem? item = _buildItem(usedNames[k], prices[k].nums,
+              prices[k].hasMarker, prices[k].explicit);
           if (item != null) items.add(item);
         }
       }
@@ -647,16 +752,7 @@ class ParsingService {
         flush();
         final double? cut = _lastAmountInLine(line);
         if (cut != null && items.isNotEmpty) {
-          final ParsedItem last = items.removeLast();
-          final double total = last.totalPrice - cut;
-          items.add(total >= _minAmount
-              ? ParsedItem(
-                  name: last.name,
-                  quantity: last.quantity,
-                  unitPrice: total / last.quantity,
-                  totalPrice: total,
-                )
-              : last);
+          items.add(_applyCut(items.removeLast(), cut));
         }
         continue;
       }
@@ -687,7 +783,7 @@ class ParsingService {
       if (named) {
         flush();
         final ParsedItem? item =
-            _buildItem(tail.name, tail.nums, tail.hasMarker);
+            _buildItem(tail.name, tail.nums, tail.hasMarker, tail.explicit);
         if (item != null) items.add(item);
       } else {
         prices.add(tail);
@@ -773,6 +869,7 @@ class ParsingService {
 
     final List<_Num> nums = <_Num>[];
     bool hasMarker = unitQty != null;
+    bool explicit = false;
 
     void add(String token) {
       final double? value = _parseAmount(token);
@@ -782,23 +879,27 @@ class ParsingService {
     for (final String t in tail) {
       if (_tokMark.hasMatch(t)) {
         hasMarker = true;
+        explicit = true;
         continue;
       }
       final RegExpMatch? markN = _tokMarkN.firstMatch(t);
       if (markN != null) {
         hasMarker = true;
+        explicit = true;
         add(markN.group(1) ?? '');
         continue;
       }
       final RegExpMatch? nMark = _tokNMark.firstMatch(t);
       if (nMark != null) {
         hasMarker = true;
+        explicit = true;
         add(nMark.group(1) ?? '');
         continue;
       }
       final RegExpMatch? nmn = _tokNMN.firstMatch(t);
       if (nmn != null) {
         hasMarker = true;
+        explicit = true;
         add(nmn.group(1) ?? '');
         add(nmn.group(2) ?? '');
         continue;
@@ -809,7 +910,7 @@ class ParsingService {
       final double? q = _parseAmount(unitQty);
       if (q != null && q > 0) nums.insert(0, _Num(unitQty, q));
     }
-    return _Tail(prefix.join(' '), nums, hasMarker);
+    return _Tail(prefix.join(' '), nums, hasMarker, explicit);
   }
 
   bool _hasSeparator(String token) =>
@@ -832,7 +933,7 @@ class ParsingService {
   /// Menafsirkan ekor angka sebuah baris barang menjadi jumlah, harga satuan, dan total.
   /// Mendukung antara lain: "12.000", "2 12.000", "6.000 12.000", "2 6.000 12.000",
   /// "2 x 6.000 12.000", dan "500.000 X1 500.000".
-  _Interp? _interpret(List<_Num> nums, bool hasMarker) {
+  _Interp? _interpret(List<_Num> nums, bool hasMarker, bool explicit) {
     final int n = nums.length;
     if (n == 0) return null;
     final List<double> v = nums.map((_Num x) => x.value).toList();
@@ -842,8 +943,17 @@ class ParsingService {
       if (n == 2) {
         if (v[0] <= 0 || v[1] <= 0) return null;
         final double qty = v[0] <= v[1] ? v[0] : v[1];
-        final double unit = v[0] <= v[1] ? v[1] : v[0];
-        return _Interp(qty, unit, qty * unit, '');
+        final double price = v[0] <= v[1] ? v[1] : v[0];
+        if (explicit) {
+          // "3 x 3.000": tanda kali tegas, angka lain adalah harga satuan.
+          // Bila ternyata subtotal, total struk yang meluruskannya.
+          return _Interp(qty, price, qty * price, '',
+              altUnit: price / qty, altTotal: price);
+        }
+        // "2 SAK 130.000": tanpa tanda kali, angka terakhir lebih mungkin
+        // subtotal (jumlah + satuan + total, tanpa harga satuan).
+        return _Interp(qty, price / qty, price, '',
+            altUnit: price, altTotal: qty * price);
       }
       final double a = v[n - 3];
       final double b = v[n - 2];
@@ -860,7 +970,9 @@ class ParsingService {
       final double b = v[1];
       final String firstToken = nums[0].token;
       if (!_hasSeparator(firstToken) && a >= 1 && a <= 99) {
-        return _Interp(a, b / a, b, ''); // "2 12.000"
+        // "2 12.000": 12.000 diperlakukan sebagai subtotal; bila total struk
+        // tidak cocok, tafsirnya dibalik menjadi harga satuan.
+        return _Interp(a, b / a, b, '', altUnit: b, altTotal: a * b);
       }
       if (_hasSeparator(firstToken) || a >= 1000) {
         final double q = a > 0 ? b / a : 1;
@@ -887,14 +999,21 @@ class ParsingService {
     return _Interp(1, z, z, suffix);
   }
 
-  ParsedItem? _buildItem(String nameRaw, List<_Num> nums, bool hasMarker) {
-    final _Interp? r = _interpret(nums, hasMarker);
+  ParsedItem? _buildItem(
+    String nameRaw,
+    List<_Num> nums,
+    bool hasMarker, [
+    bool? explicit,
+  ]) {
+    final _Interp? r = _interpret(nums, hasMarker, explicit ?? hasMarker);
     if (r == null) return null;
     if (r.total < _minAmount || r.total > _maxValue) return null;
 
     String name = '$nameRaw ${r.suffix}'.trim();
     double qty = r.qty;
     double unit = r.unit;
+    double? altUnit = r.altUnit;
+    double? altTotal = r.altTotal;
 
     // Jumlah di awal nama ("2 TEH BOTOL 7.000").
     if (nums.length == 1 && !hasMarker) {
@@ -909,17 +1028,37 @@ class ParsingService {
           qty = q.toDouble();
           unit = r.total / q;
           name = rest;
+          // "2 TEH BOTOL 7.000": 7.000 subtotal, atau harga satuan?
+          altUnit = r.total;
+          altTotal = q * r.total;
         }
       }
     }
 
     final String? cleaned = _cleanItemName(name);
     if (cleaned == null) return null;
+
+    ParsedItem? alternative;
+    final double? at = altTotal;
+    final double? au = altUnit;
+    if (at != null &&
+        au != null &&
+        qty > 1 &&
+        at <= _maxValue &&
+        (at - r.total).abs() > 1) {
+      alternative = ParsedItem(
+        name: cleaned,
+        quantity: qty,
+        unitPrice: au,
+        totalPrice: at,
+      );
+    }
     return ParsedItem(
       name: cleaned,
       quantity: qty,
       unitPrice: unit,
       totalPrice: r.total,
+      alternative: alternative,
     );
   }
 

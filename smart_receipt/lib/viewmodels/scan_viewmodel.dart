@@ -18,6 +18,7 @@ import '../services/image_enhancement_service.dart';
 import '../services/image_format_service.dart';
 import '../services/image_picker_service.dart';
 import '../services/image_storage_service.dart';
+import '../services/duplicate_detector.dart';
 import '../services/ml_service.dart';
 import '../services/ml_training_data.dart';
 import '../services/ocr_service.dart';
@@ -28,6 +29,7 @@ import '../services/store_location_service.dart';
 import 'auth_viewmodel.dart';
 import 'safe_change_notifier.dart';
 
+export '../services/duplicate_detector.dart' show DuplicateMatch;
 export '../services/image_picker_service.dart' show ScanSource;
 export '../services/store_location_service.dart'
     show
@@ -182,6 +184,7 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
     this.onTransactionSaved,
   })  : _auth = authViewModel,
         _locationService = storeLocationService,
+        _duplicateDetector = DuplicateDetector(transactionRepository),
         _planService = shoppingPlanService,
         _enhancementService = imageEnhancementService,
         _selector = receiptSelector,
@@ -218,6 +221,62 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
   final ImagePickerService _pickerService;
   final ShoppingPlanService? _planService;
   final StoreLocationService? _locationService;
+  final DuplicateDetector _duplicateDetector;
+
+  List<DuplicateMatch> _duplicates = const <DuplicateMatch>[];
+  Timer? _duplicateTimer;
+
+  /// Transaksi lama yang mirip dengan struk di pratinjau (kosong bila tidak ada).
+  List<DuplicateMatch> get duplicates => _duplicates;
+
+  /// Memeriksa apakah struk ini sudah pernah dicatat (tanggal + total sama,
+  /// lalu toko/barang mirip). Dipanggil otomatis saat pratinjau terbuka dan
+  /// setelah tanggal/total diubah, serta sekali lagi sebelum menyimpan.
+  Future<List<DuplicateMatch>> checkDuplicates() async {
+    _duplicateTimer?.cancel();
+    final ScanDraft? draft = _draft;
+    final int? userId = _auth.currentUser?.id;
+    final DateTime? date = draft?.transactionDate;
+    final double? total = draft?.totalAmount;
+    if (draft == null ||
+        userId == null ||
+        date == null ||
+        total == null ||
+        total <= 0) {
+      if (_duplicates.isNotEmpty) {
+        _duplicates = const <DuplicateMatch>[];
+        safeNotify();
+      }
+      return const <DuplicateMatch>[];
+    }
+
+    List<DuplicateMatch> found;
+    try {
+      found = await _duplicateDetector.find(
+        userId: userId,
+        date: date,
+        total: total,
+        merchantName: draft.merchantName.trim(),
+        itemNames: draft.items.map((DraftItem i) => i.name).toList(),
+      );
+    } catch (_) {
+      found =
+          const <DuplicateMatch>[]; // Pemeriksaan gagal tidak menghalangi simpan.
+    }
+    if (!identical(draft, _draft)) return const <DuplicateMatch>[];
+    _duplicates = found;
+    safeNotify();
+    return found;
+  }
+
+  /// Menjadwalkan ulang pemeriksaan setelah pengguna berhenti mengetik.
+  void _scheduleDuplicateCheck() {
+    _duplicateTimer?.cancel();
+    _duplicateTimer = Timer(
+      const Duration(milliseconds: 700),
+      () => unawaited(checkDuplicates()),
+    );
+  }
 
   /// Penanda permintaan lokasi terbaru; hasil permintaan lama diabaikan.
   int _locationToken = 0;
@@ -358,6 +417,8 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
     }
 
     _draft = null;
+    _duplicates = const <DuplicateMatch>[];
+    _duplicateTimer?.cancel();
     _formErrors.clear();
     _errorMessage = null;
     _status = ScanStatus.processing;
@@ -495,8 +556,10 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
       _status = ScanStatus.ready;
       _progressMessage = null;
       safeNotify();
-      // Lokasi dicari di latar belakang agar pratinjau langsung tampil.
+      // Lokasi dan pemeriksaan struk ganda berjalan di latar belakang agar
+      // pratinjau langsung tampil.
       unawaited(_lookupLocation(fromReceipt: true));
+      unawaited(checkDuplicates());
     } on ImageFormatException catch (e) {
       _setError(e.message);
     } on OcrException catch (e) {
@@ -539,6 +602,7 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
     if (draft == null) return;
     draft.merchantName = value;
     _clearFieldError(fieldMerchant);
+    _scheduleDuplicateCheck();
   }
 
   void updateTotalAmountText(String text) {
@@ -546,6 +610,7 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
     if (draft == null) return;
     draft.totalAmount = parseAmountInput(text);
     _clearFieldError(fieldAmount);
+    _scheduleDuplicateCheck();
     safeNotify(); // Peringatan selisih total perlu diperbarui.
   }
 
@@ -559,6 +624,7 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
     draft.transactionDate = value;
     _formErrors.remove(fieldDate);
     safeNotify();
+    unawaited(checkDuplicates());
   }
 
   /// Mengganti total struk dengan jumlah harga seluruh barang.
@@ -1147,6 +1213,8 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
 
   void reset() {
     _locationToken++;
+    _duplicateTimer?.cancel();
+    _duplicates = const <DuplicateMatch>[];
     _status = ScanStatus.idle;
     _errorMessage = null;
     _progressMessage = null;
@@ -1171,6 +1239,7 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
 
   @override
   void dispose() {
+    _duplicateTimer?.cancel();
     _auth.removeListener(_onAuthChanged);
     super.dispose();
   }

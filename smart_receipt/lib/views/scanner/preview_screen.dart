@@ -7,6 +7,7 @@ import '../../core/theme/app_decorations.dart';
 import '../../core/theme/app_icons.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/thousands_separator_formatter.dart';
+import '../../data/models/transaction_model.dart';
 import '../../viewmodels/scan_viewmodel.dart';
 import '../widgets/ai_result_badge.dart';
 import '../widgets/confirm_dialog.dart';
@@ -67,6 +68,13 @@ class _PreviewScreenState extends State<PreviewScreen> {
         : '$issues. Mohon periksa kembali nama barang dan harganya, atau foto ulang di tempat yang lebih terang.';
   }
 
+  String _duplicateSummary(DuplicateMatch match) {
+    final TransactionModel t = match.transaction;
+    return '${t.merchantName} · ${AppFormatters.longDate(t.transactionDate)} · '
+        '${AppFormatters.rupiah(t.totalAmount)}\n'
+        '(${match.reasons.join(', ')})';
+  }
+
   void _useItemsTotal(ScanViewModel scan) {
     scan.useItemsTotal();
     final double? total = scan.draft?.totalAmount;
@@ -77,6 +85,21 @@ class _PreviewScreenState extends State<PreviewScreen> {
   Future<void> _save() async {
     final ScanViewModel scan = context.read<ScanViewModel>();
     FocusScope.of(context).unfocus();
+
+    // Struk yang sama bisa terpindai dua kali: tanyakan dulu sebelum disimpan.
+    final List<DuplicateMatch> duplicates = await scan.checkDuplicates();
+    if (!mounted) return;
+    if (duplicates.isNotEmpty) {
+      final bool proceed = await showConfirmDialog(
+        context,
+        title: 'Struk ini mungkin sudah tercatat',
+        message:
+            '${_duplicateSummary(duplicates.first)}\n\nTetap simpan sebagai transaksi baru?',
+        confirmLabel: 'Tetap Simpan',
+        cancelLabel: 'Periksa Lagi',
+      );
+      if (!proceed || !mounted) return;
+    }
 
     final GoRouter router = GoRouter.of(context);
     final bool ok = await scan.saveTransaction();
@@ -187,6 +210,14 @@ class _PreviewScreenState extends State<PreviewScreen> {
                         ? BannerType.success
                         : BannerType.warning,
                   ),
+                  if (scan.duplicates.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    MessageBanner(
+                      message:
+                          'Struk ini mirip transaksi yang sudah tercatat:\n${_duplicateSummary(scan.duplicates.first)}\nPastikan ini bukan struk yang sama.',
+                      type: BannerType.warning,
+                    ),
+                  ],
                   if (draft.qualityNotes.isNotEmpty ||
                       draft.usedEnhancedImage) ...[
                     const SizedBox(height: AppSpacing.md),

@@ -13,6 +13,8 @@ import '../../views/profile/data_tools_screen.dart';
 import '../../views/profile/notification_settings_screen.dart';
 import '../../views/history/history_screen.dart';
 import '../../views/location/store_map_screen.dart';
+import '../../views/price/price_comparison_screen.dart';
+import '../../views/search/search_screen.dart';
 import '../../views/profile/settings_screen.dart';
 import '../../views/scanner/camera_screen.dart';
 import '../../views/scanner/preview_screen.dart';
@@ -167,6 +169,17 @@ class AppRouter {
           path: AppRoutes.shoppingPlan,
           pageBuilder: (context, state) =>
               _page(state, const ShoppingPlanScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.search,
+          pageBuilder: (context, state) => _page(state, const SearchScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.priceCompare,
+          pageBuilder: (context, state) => _page(
+            state,
+            PriceComparisonScreen(initialQuery: state.extra as String?),
+          ),
         ),
         GoRoute(
           path: AppRoutes.storeMap,

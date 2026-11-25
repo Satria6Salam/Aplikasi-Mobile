@@ -19,4 +19,6 @@ class AppRoutes {
   static const String dataTools = '/data-tools';
   static const String shoppingPlan = '/shopping-plan';
   static const String storeMap = '/store-map';
+  static const String search = '/search';
+  static const String priceCompare = '/price-compare';
 }

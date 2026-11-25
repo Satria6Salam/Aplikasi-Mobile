@@ -108,6 +108,38 @@ const Map<String, _Case> _cases = <String, _Case>{
     'TOTAL 20. 500',
     <String, double>{'Sabun Cuci': 12000, 'Sikat Gigi': 8500},
   ),
+  'jumlah + satuan + subtotal tanpa harga satuan (2 SAK 130.000)': _Case(
+    'TOKO BANGUNAN JAYA\n01/10/2026\nSemen Gresik 2 SAK 130.000\n'
+    'Paku 5cm 1 KG 20.000\nTOTAL 150.000',
+    <String, double>{'Semen Gresik': 130000, 'Paku 5cm': 20000},
+    qty: <String, double>{'Semen Gresik': 2},
+  ),
+  'harga satuan dengan tanda x tanpa subtotal': _Case(
+    'MINIMARKET\n01/10/2026\nINDOMIE 3 x 3.000\nTEH PUCUK 2 x 4.000\n'
+    'TOTAL 17.000',
+    <String, double>{'INDOMIE': 9000, 'TEH PUCUK': 8000},
+    qty: <String, double>{'INDOMIE': 3},
+  ),
+  'tanda x tetapi angkanya ternyata subtotal (diluruskan total)': _Case(
+    'TOKO BANGUNAN\n01/10/2026\nSemen Gresik 2 x 130.000\nTOTAL 130.000',
+    <String, double>{'Semen Gresik': 130000},
+    qty: <String, double>{'Semen Gresik': 2},
+  ),
+  'jumlah lalu harga satuan tanpa x (diluruskan total)': _Case(
+    'TOKO ATK\n01/10/2026\nPulpen 5 3.000\nBuku 2 5.000\nTOTAL 25.000',
+    <String, double>{'Pulpen': 15000, 'Buku': 10000},
+    qty: <String, double>{'Pulpen': 5, 'Buku': 2},
+  ),
+  'satu baris subtotal, satu baris harga satuan (diluruskan total)': _Case(
+    'WARUNG\n01/10/2026\nRoti 2 12.000\nTeh 3 4.000\nTOTAL 24.000',
+    <String, double>{'Roti': 12000, 'Teh': 12000},
+    qty: <String, double>{'Roti': 2, 'Teh': 3},
+  ),
+  'jumlah di awal nama dengan harga satuan (diluruskan total)': _Case(
+    'KIOS BERKAH\n10/10/2026\n2 TEH BOTOL 7.000\nTOTAL 14.000',
+    <String, double>{'TEH BOTOL': 14000},
+    qty: <String, double>{'TEH BOTOL': 2},
+  ),
   'huruf S, B, Z terbaca di dalam harga': _Case(
     'MINIMARKET\n01/10/2026\nKopi Sachet 12.S00\nTeh Celup 1B.000\n'
     'TOTAL 30.500',

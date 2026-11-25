@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/constants/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_decorations.dart';
 import '../../core/theme/app_icons.dart';
@@ -99,6 +101,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ],
                           ),
                         ),
+                        Container(
+                          decoration:
+                              AppDecorations.card(radius: AppRadius.control),
+                          child: IconButton(
+                            tooltip: 'Pencarian lanjutan',
+                            icon: Icon(AppIcons.slidersHorizontal, size: 22),
+                            onPressed: () => context.push(AppRoutes.search),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Container(
                           decoration:
                               AppDecorations.card(radius: AppRadius.control),
