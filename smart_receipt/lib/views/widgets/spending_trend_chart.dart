@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../services/insight_service.dart';
+import 'chart_style.dart';
 
 /// Grafik batang pengeluaran harian; batang tumbuh dengan animasi dan dapat diketuk.
 class SpendingTrendChart extends StatefulWidget {
@@ -80,6 +81,8 @@ class _SpendingTrendChartState extends State<SpendingTrendChart> {
                         fraction: data[i].amount / maxValue,
                         hasValue: data[i].amount > 0,
                         isSelected: selected == i,
+                        isHighlighted: false,
+                        radius: 5,
                         delay: i,
                       ),
                     ),
@@ -107,38 +110,60 @@ class _Bar extends StatelessWidget {
     required this.fraction,
     required this.hasValue,
     required this.isSelected,
+    this.isHighlighted = false,
     required this.delay,
+    this.radius = 5,
   });
 
   final double fraction;
   final bool hasValue;
   final bool isSelected;
+  final bool isHighlighted;
   final int delay;
+  final double radius;
 
   @override
   Widget build(BuildContext context) {
-    final Color color = isSelected
-        ? AppColors.emeraldDark
-        : (hasValue ? AppColors.emerald : AppColors.border);
+    final List<Color> colors = isSelected
+        ? ChartGradients.selected
+        : (isHighlighted
+            ? ChartGradients.highlighted
+            : (hasValue ? ChartGradients.normal : ChartGradients.empty));
 
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: fraction),
-      duration: Duration(milliseconds: 500 + delay * 14),
-      curve: Curves.easeOutCubic,
-      builder: (BuildContext context, double value, Widget? child) {
-        final double factor = math.min(1.0, math.max(value, 0.03));
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: FractionallySizedBox(heightFactor: factor, child: child),
-        );
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+    return Stack(
+      children: [
+        const Positioned.fill(
+          child: CustomPaint(painter: DashedGridPainter(lines: 3)),
         ),
-      ),
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: fraction),
+          duration: Duration(milliseconds: 650 + delay * 40),
+          curve: Curves.easeOutCubic,
+          builder: (BuildContext context, double value, Widget? child) {
+            final double factor = math.min(1.0, math.max(value, 0.03));
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: FractionallySizedBox(heightFactor: factor, child: child),
+            );
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              gradient: ChartGradients.vertical(colors),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
+              boxShadow: isSelected
+                  ? const [
+                      BoxShadow(
+                        color: Color(0x5934C38A),
+                        blurRadius: 10,
+                        offset: Offset(0, 3),
+                      ),
+                    ]
+                  : null,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

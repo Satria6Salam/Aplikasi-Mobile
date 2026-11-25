@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+import 'chart_style.dart';
 
 /// Satu batang pada grafik tren.
 class TrendBar {
@@ -120,6 +121,7 @@ class _BarTrendChartState extends State<BarTrendChart> {
                               hasValue: bars[i].amount > 0,
                               isSelected: selected == i,
                               isHighlighted: bars[i].isHighlighted,
+                              radius: 8,
                               delay: i,
                             ),
                           ),
@@ -158,6 +160,7 @@ class _Bar extends StatelessWidget {
     required this.isSelected,
     required this.isHighlighted,
     required this.delay,
+    this.radius = 8,
   });
 
   final double fraction;
@@ -165,33 +168,50 @@ class _Bar extends StatelessWidget {
   final bool isSelected;
   final bool isHighlighted;
   final int delay;
+  final double radius;
 
   @override
   Widget build(BuildContext context) {
-    final Color color = isSelected
-        ? AppColors.emeraldDark
+    final List<Color> colors = isSelected
+        ? ChartGradients.selected
         : (isHighlighted
-            ? AppColors.emerald
-            : (hasValue ? const Color(0xFF6EE7B7) : AppColors.border));
+            ? ChartGradients.highlighted
+            : (hasValue ? ChartGradients.normal : ChartGradients.empty));
 
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: fraction),
-      duration: Duration(milliseconds: 550 + delay * 40),
-      curve: Curves.easeOutCubic,
-      builder: (BuildContext context, double value, Widget? child) {
-        final double factor = math.min(1.0, math.max(value, 0.03));
-        return Align(
-          alignment: Alignment.bottomCenter,
-          child: FractionallySizedBox(heightFactor: factor, child: child),
-        );
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+    return Stack(
+      children: [
+        const Positioned.fill(
+          child: CustomPaint(painter: DashedGridPainter(lines: 3)),
         ),
-      ),
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: fraction),
+          duration: Duration(milliseconds: 650 + delay * 40),
+          curve: Curves.easeOutCubic,
+          builder: (BuildContext context, double value, Widget? child) {
+            final double factor = math.min(1.0, math.max(value, 0.03));
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: FractionallySizedBox(heightFactor: factor, child: child),
+            );
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              gradient: ChartGradients.vertical(colors),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(radius)),
+              boxShadow: isSelected
+                  ? const [
+                      BoxShadow(
+                        color: Color(0x5934C38A),
+                        blurRadius: 10,
+                        offset: Offset(0, 3),
+                      ),
+                    ]
+                  : null,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -21,6 +21,7 @@ import '../widgets/cash_flow_card.dart';
 import '../widgets/category_mini_list.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/dashboard_header.dart';
+import '../widgets/duotone_icon.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/insight_card.dart';
@@ -478,15 +479,10 @@ class _PeriodStats extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
                 children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.emeraldTint,
-                      borderRadius: BorderRadius.circular(AppRadius.control),
-                    ),
-                    child: Icon(rows[i].icon,
-                        size: 18, color: AppColors.emeraldDeep),
+                  DuotoneIcon(
+                    icon: rows[i].icon,
+                    color: AppColors.emeraldDeep,
+                    size: 40,
                   ),
                   const SizedBox(width: 12),
                   Expanded(

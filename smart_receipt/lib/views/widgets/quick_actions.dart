@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_decorations.dart';
+import 'duotone_icon.dart';
 import 'pressable_scale.dart';
 
 /// Satu tombol aksi cepat (ikon di kotak membulat dengan label di bawahnya).
@@ -111,26 +112,15 @@ class _ActionButton extends StatelessWidget {
                               : AppDecorations.softShadow,
                         ),
                   alignment: Alignment.center,
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: onDark
-                          ? (hi
-                              ? AppColors.heroBottom.withValues(alpha: 0.14)
-                              : AppColors.white.withValues(alpha: 0.16))
-                          : (hi
-                              ? AppColors.white.withValues(alpha: 0.18)
-                              : AppColors.mint),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      action.icon,
-                      size: 19,
-                      color: onDark
-                          ? (hi ? AppColors.heroBottom : AppColors.white)
-                          : (hi ? AppColors.white : AppColors.emeraldDeep),
-                    ),
+                  child: DuotoneIcon(
+                    icon: action.icon,
+                    size: 42,
+                    onDark: onDark,
+                    color: onDark
+                        ? (hi ? AppColors.heroBottom : AppColors.white)
+                        : (hi ? AppColors.white : AppColors.emeraldDeep),
+                    accent:
+                        onDark ? (hi ? AppColors.white : AppColors.lime) : null,
                   ),
                 ),
               ),

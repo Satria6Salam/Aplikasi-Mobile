@@ -1,8 +1,11 @@
+import 'dart:math' as math;
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 
 import 'animated_card.dart';
+import 'chart_style.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -352,7 +355,7 @@ class _Legend extends StatelessWidget {
 }
 
 /// Grafik batang berdampingan: pemasukan (hijau) dan pengeluaran (merah)
-/// per bulan.
+/// per bulan. Batang tumbuh dengan animasi saat pertama tampil.
 class CashFlowChart extends StatelessWidget {
   const CashFlowChart({super.key, required this.months, this.height = 150});
 
@@ -361,28 +364,48 @@ class CashFlowChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final TextStyle labelStyle =
+        Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: AppColors.coolGray,
+                  fontSize: 10,
+                ) ??
+            const TextStyle(fontSize: 10, color: AppColors.coolGray);
+    final String signature = months
+        .map((MonthCashFlow m) =>
+            '${m.flow.income.round()}/${m.flow.expense.round()}')
+        .join('-');
     return SizedBox(
       height: height,
       width: double.infinity,
-      child: CustomPaint(
-        painter: _CashFlowChartPainter(
-          months: months,
-          labelStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.coolGray,
-                    fontSize: 10,
-                  ) ??
-              const TextStyle(fontSize: 10, color: AppColors.coolGray),
-        ),
+      child: TweenAnimationBuilder<double>(
+        key: ValueKey<String>(signature),
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 900),
+        curve: Curves.easeOutCubic,
+        builder: (BuildContext context, double progress, Widget? child) {
+          return CustomPaint(
+            painter: _CashFlowChartPainter(
+              months: months,
+              labelStyle: labelStyle,
+              progress: progress,
+            ),
+          );
+        },
       ),
     );
   }
 }
 
 class _CashFlowChartPainter extends CustomPainter {
-  _CashFlowChartPainter({required this.months, required this.labelStyle});
+  _CashFlowChartPainter({
+    required this.months,
+    required this.labelStyle,
+    required this.progress,
+  });
 
   final List<MonthCashFlow> months;
   final TextStyle labelStyle;
+  final double progress;
 
   static const double _left = 40;
   static const double _bottom = 20;
@@ -407,11 +430,12 @@ class _CashFlowChartPainter extends CustomPainter {
     if (maxValue <= 0) maxValue = 1;
 
     final Paint grid = Paint()
-      ..color = AppColors.border
+      ..color = const Color(0x2616855A)
       ..strokeWidth = 1;
     for (int i = 0; i <= 2; i++) {
       final double y = area.top + area.height * i / 2;
-      canvas.drawLine(Offset(area.left, y), Offset(area.right, y), grid);
+      paintDashedLine(
+          canvas, Offset(area.left, y), Offset(area.right, y), grid);
       final TextPainter label =
           _text(PriceLineChart.compact(maxValue * (1 - i / 2)));
       label.paint(
@@ -420,23 +444,27 @@ class _CashFlowChartPainter extends CustomPainter {
 
     final double slot = area.width / months.length;
     final double barWidth = (slot * 0.28).clamp(4.0, 18.0);
+    final double radius = barWidth / 2;
     for (int i = 0; i < months.length; i++) {
       final double center = area.left + slot * (i + 0.5);
-      void bar(double value, double dx, Color color) {
+      void bar(double value, double dx, List<Color> colors) {
         if (value <= 0) return;
-        final double h = area.height * (value / maxValue);
+        final double h =
+            math.max(radius, area.height * (value / maxValue) * progress);
+        final Rect rect =
+            Rect.fromLTWH(center + dx, area.bottom - h, barWidth, h);
         canvas.drawRRect(
           RRect.fromRectAndCorners(
-            Rect.fromLTWH(center + dx, area.bottom - h, barWidth, h),
-            topLeft: const Radius.circular(3),
-            topRight: const Radius.circular(3),
+            rect,
+            topLeft: Radius.circular(radius),
+            topRight: Radius.circular(radius),
           ),
-          Paint()..color = color,
+          Paint()..shader = ChartGradients.vertical(colors).createShader(rect),
         );
       }
 
-      bar(months[i].flow.income, -barWidth - 1, AppColors.emerald);
-      bar(months[i].flow.expense, 1, AppColors.error);
+      bar(months[i].flow.income, -barWidth - 1.5, ChartGradients.income);
+      bar(months[i].flow.expense, 1.5, ChartGradients.expense);
 
       final TextPainter name =
           _text(AppFormatters.monthShort(months[i].month.month));
@@ -447,5 +475,7 @@ class _CashFlowChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CashFlowChartPainter old) =>
-      old.months != months || old.labelStyle != labelStyle;
+      old.months != months ||
+      old.labelStyle != labelStyle ||
+      old.progress != progress;
 }

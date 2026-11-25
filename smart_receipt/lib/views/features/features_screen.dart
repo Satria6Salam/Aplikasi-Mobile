@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_decorations.dart';
 import '../../core/theme/app_icons.dart';
 import '../widgets/app_background.dart';
+import '../widgets/duotone_icon.dart';
 import '../widgets/fade_slide_in.dart';
 import '../widgets/pressable_scale.dart';
 
@@ -253,15 +254,7 @@ class _FeatureCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: spec.color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.control),
-                      ),
-                      child: Icon(spec.icon, size: 20, color: spec.color),
-                    ),
+                    DuotoneIcon(icon: spec.icon, color: spec.color, size: 46),
                     const SizedBox(height: 10),
                     Text(
                       spec.title,

@@ -99,10 +99,11 @@ class _DonutPainter extends CustomPainter {
       radius: (size.width - strokeWidth) / 2,
     );
 
+    final double radius = rect.width / 2;
     final Paint track = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..color = AppColors.border;
+      ..color = const Color(0x1416855A);
     canvas.drawArc(rect, 0, math.pi * 2, false, track);
 
     double total = 0;
@@ -111,20 +112,42 @@ class _DonutPainter extends CustomPainter {
     }
     if (total <= 0) return;
 
-    const double gap = 0.05;
+    // Ujung membulat memakan sedikit busur; jarak antar irisan menyesuaikan.
+    final double capAngle = strokeWidth / radius;
+    final double gap = slices.length > 1 ? 0.06 + capAngle : 0;
     double start = -math.pi / 2;
     for (final DonutSlice slice in slices) {
       final double fraction = slice.value / total;
       final double fullSweep = fraction * math.pi * 2 * progress;
       final double sweep = slices.length > 1
-          ? math.max(0.0, fullSweep - gap * progress)
+          ? math.max(0.001, fullSweep - gap * progress)
           : fullSweep;
+      final double from = start + (gap * progress) / 2;
+      final Color light = Color.lerp(slice.color, Colors.white, 0.35)!;
       final Paint paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
-        ..strokeCap = StrokeCap.butt
-        ..color = slice.color;
-      canvas.drawArc(rect, start + (gap * progress) / 2, sweep, false, paint);
+        ..strokeCap = slices.length > 1 ? StrokeCap.round : StrokeCap.butt
+        ..shader = SweepGradient(
+          startAngle: 0,
+          endAngle: math.max(sweep, 0.01),
+          colors: [light, slice.color],
+          transform: GradientRotation(from),
+        ).createShader(rect);
+      // Kilau lembut di bawah irisan.
+      canvas.drawArc(
+        rect,
+        from,
+        sweep,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth
+          ..strokeCap = paint.strokeCap
+          ..color = slice.color.withValues(alpha: 0.22)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      );
+      canvas.drawArc(rect, from, sweep, false, paint);
       start += fullSweep;
     }
   }

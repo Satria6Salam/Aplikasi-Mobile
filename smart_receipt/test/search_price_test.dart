@@ -211,9 +211,14 @@ List<String> idsOf(Fixture f, List<TransactionModel> list) => <String>[
             .key,
     ];
 
+/// Menunggu query SQLite (berjalan di isolate lain, jadi butuh waktu nyata)
+/// dan pencarian berjenjang selesai.
 Future<void> settle() async {
   for (int i = 0; i < 30; i++) {
     await Future<void>.delayed(Duration.zero);
+  }
+  for (int i = 0; i < 12; i++) {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
   }
 }
 

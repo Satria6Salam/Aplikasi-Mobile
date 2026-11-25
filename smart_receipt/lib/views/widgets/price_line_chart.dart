@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+import 'chart_style.dart';
 
 /// Satu titik pada grafik harga.
 class PricePoint {
@@ -102,11 +103,12 @@ class _PriceChartPainter extends CustomPainter {
 
     // Garis bantu dan label harga.
     final Paint grid = Paint()
-      ..color = AppColors.border
+      ..color = const Color(0x2616855A)
       ..strokeWidth = 1;
     for (int i = 0; i <= 2; i++) {
       final double y = area.top + area.height * i / 2;
-      canvas.drawLine(Offset(area.left, y), Offset(area.right, y), grid);
+      paintDashedLine(
+          canvas, Offset(area.left, y), Offset(area.right, y), grid);
       final double value = high - (high - low) * i / 2;
       final TextPainter label = _text(PriceLineChart.compact(value));
       label.paint(
@@ -125,18 +127,46 @@ class _PriceChartPainter extends CustomPainter {
     double yOf(double price) =>
         area.bottom - area.height * (price - low) / (high - low);
 
-    // Garis.
+    // Garis melengkung dengan area berwarna di bawahnya.
     if (points.length > 1) {
       final Path path = Path()..moveTo(xOf(0), yOf(points.first.price));
       for (int i = 1; i < points.length; i++) {
-        path.lineTo(xOf(i), yOf(points[i].price));
+        final double x0 = xOf(i - 1);
+        final double y0 = yOf(points[i - 1].price);
+        final double x1 = xOf(i);
+        final double y1 = yOf(points[i].price);
+        final double mid = (x0 + x1) / 2;
+        path.cubicTo(mid, y0, mid, y1, x1, y1);
       }
+      final Path fill = Path.from(path)
+        ..lineTo(xOf(points.length - 1), area.bottom)
+        ..lineTo(xOf(0), area.bottom)
+        ..close();
+      canvas.drawPath(
+        fill,
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0x5534C38A), Color(0x0034C38A)],
+          ).createShader(area),
+      );
       canvas.drawPath(
         path,
         Paint()
-          ..color = AppColors.emerald
+          ..color = AppColors.emerald.withValues(alpha: 0.25)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.5
+          ..strokeWidth = 7
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..shader = const LinearGradient(
+            colors: [Color(0xFF34C38A), AppColors.emerald],
+          ).createShader(area)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3
           ..strokeJoin = StrokeJoin.round
           ..strokeCap = StrokeCap.round,
       );
@@ -151,6 +181,10 @@ class _PriceChartPainter extends CustomPainter {
       if (varies && p.price == maxPrice) color = AppColors.error;
       final Offset c = Offset(xOf(i), yOf(p.price));
       final bool last = i == points.length - 1;
+      if (last) {
+        canvas.drawCircle(
+            c, 11, Paint()..color = color.withValues(alpha: 0.18));
+      }
       canvas.drawCircle(c, last ? 6 : 4.5, Paint()..color = AppColors.white);
       canvas.drawCircle(c, last ? 4.5 : 3.2, Paint()..color = color);
     }
