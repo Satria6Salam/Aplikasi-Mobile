@@ -15,7 +15,7 @@ class AppBottomNav extends StatelessWidget {
     required this.onScan,
   });
 
-  /// 0 = Beranda, 1 = Riwayat, 2 = Analisis, 3 = Profil.
+  /// 0 = Beranda, 1 = Riwayat, 2 = Fitur, 3 = Profil.
   final int currentIndex;
   final ValueChanged<int> onSelect;
   final VoidCallback onScan;
@@ -25,7 +25,7 @@ class AppBottomNav extends StatelessWidget {
     final List<_NavSpec> items = <_NavSpec>[
       _NavSpec('Beranda', AppIcons.layoutDashboard),
       _NavSpec('Riwayat', AppIcons.history),
-      _NavSpec('Analisis', AppIcons.trendingUp),
+      _NavSpec('Fitur', AppIcons.layoutGrid),
       _NavSpec('Profil', AppIcons.user),
     ];
 

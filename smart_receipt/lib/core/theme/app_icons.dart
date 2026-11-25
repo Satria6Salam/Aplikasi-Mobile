@@ -72,6 +72,8 @@ class AppIcons {
   static IconData get heartHandshake => LucideIcons.heartHandshake;
   static IconData get bed => LucideIcons.bed;
 
+  static IconData get layoutGrid => LucideIcons.layoutGrid;
+
   // Lokasi toko
   static IconData get mapPin => LucideIcons.mapPin;
   static IconData get mapPinned => LucideIcons.mapPinned;

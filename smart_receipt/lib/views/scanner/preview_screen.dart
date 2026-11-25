@@ -68,6 +68,15 @@ class _PreviewScreenState extends State<PreviewScreen> {
         : '$issues. Mohon periksa kembali nama barang dan harganya, atau foto ulang di tempat yang lebih terang.';
   }
 
+  /// Daftar kata yang dikoreksi otomatis, singkat dan tidak menakutkan.
+  String _correctionsMessage(List<TextCorrection> corrections) {
+    final List<String> shown =
+        corrections.take(5).map((TextCorrection c) => c.toString()).toList();
+    final int more = corrections.length - shown.length;
+    return 'Kata yang dikoreksi otomatis: ${shown.join(', ')}'
+        '${more > 0 ? ' dan $more lainnya' : ''}. Periksa kembali bila perlu.';
+  }
+
   String _duplicateSummary(DuplicateMatch match) {
     final TransactionModel t = match.transaction;
     return '${t.merchantName} · ${AppFormatters.longDate(t.transactionDate)} · '
@@ -223,6 +232,21 @@ class _PreviewScreenState extends State<PreviewScreen> {
                     const SizedBox(height: AppSpacing.md),
                     MessageBanner(
                       message: _qualityMessage(draft),
+                      type: BannerType.warning,
+                    ),
+                  ],
+                  if (draft.parsed.breakdownText(AppFormatters.rupiah)
+                      case final String breakdown) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    MessageBanner(
+                      message: 'Rincian struk: $breakdown',
+                      type: BannerType.success,
+                    ),
+                  ],
+                  if (draft.parsed.corrections.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    MessageBanner(
+                      message: _correctionsMessage(draft.parsed.corrections),
                       type: BannerType.warning,
                     ),
                   ],

@@ -58,6 +58,16 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
+                    // Dibuka dari menu Fitur: sediakan jalan kembali.
+                    if (Navigator.of(context).canPop())
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: Icon(AppIcons.chevronLeft, size: 18),
+                          label: const Text('Kembali'),
+                        ),
+                      ),
                     const GradientHeader(
                       title: 'Analisis',
                       subtitle: 'Pahami ke mana uang Anda pergi',

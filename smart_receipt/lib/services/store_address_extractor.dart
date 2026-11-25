@@ -13,6 +13,8 @@
 ///    provinsi, kode pos.
 library;
 
+import 'indonesian_places.dart';
+
 /// Tingkat ketelitian sebuah lokasi, dari paling rinci ke paling kasar.
 enum LocationPrecision { store, street, village, district, postalCode, city }
 
@@ -190,6 +192,42 @@ class StoreAddress {
     return queries;
   }
 
+  /// Melengkapi bagian yang kosong dengan petunjuk dari judul toko (mis.
+  /// "Wizzmie Muharto Malang" -> cabang Muharto, Jalan Muharto, kota Malang).
+  /// Yang sudah terbaca dari baris alamat tidak ditimpa.
+  StoreAddress merged({String? branchName, String? street, String? city}) {
+    final bool adds = (this.branchName == null && branchName != null) ||
+        (this.street == null && street != null) ||
+        (this.city == null && city != null);
+    if (!adds) return this;
+    final StoreAddress base = StoreAddress(
+      branchName: this.branchName ?? branchName,
+      street: this.street ?? street,
+      houseNumber: houseNumber,
+      rtRw: rtRw,
+      village: village,
+      district: district,
+      city: this.city ?? city,
+      province: province,
+      postalCode: postalCode,
+      phone: phone,
+      rawLines: rawLines,
+      freeText: freeText,
+    );
+    return base.copyWith(confidence: _scoreOf(base));
+  }
+
+  static double _scoreOf(StoreAddress a) {
+    double c = 0;
+    if (a.street != null) c += 0.35;
+    if (a.district != null) c += 0.2;
+    if (a.city != null) c += 0.2;
+    if (a.postalCode != null) c += 0.15;
+    if (a.village != null) c += 0.05;
+    if (a.houseNumber != null) c += 0.05;
+    return c > 1 ? 1 : c;
+  }
+
   StoreAddress copyWith({String? branchName, double? confidence}) {
     return StoreAddress(
       branchName: branchName ?? this.branchName,
@@ -210,190 +248,6 @@ class StoreAddress {
 
   @override
   String toString() => fullAddress;
-}
-
-/// Kota/kabupaten besar dan nama provinsi untuk mengenali baris alamat
-/// tanpa kata kunci dan memperbaiki salah baca OCR ("HALAG" -> "Malang").
-class _Gazetteer {
-  static const List<String> cities = <String>[
-    'Jakarta Pusat',
-    'Jakarta Utara',
-    'Jakarta Barat',
-    'Jakarta Selatan',
-    'Jakarta Timur',
-    'Jakarta',
-    'Bogor',
-    'Depok',
-    'Tangerang',
-    'Tangerang Selatan',
-    'Bekasi',
-    'Bandung',
-    'Bandung Barat',
-    'Cimahi',
-    'Sumedang',
-    'Garut',
-    'Tasikmalaya',
-    'Ciamis',
-    'Cirebon',
-    'Indramayu',
-    'Karawang',
-    'Purwakarta',
-    'Subang',
-    'Sukabumi',
-    'Cianjur',
-    'Serang',
-    'Cilegon',
-    'Pandeglang',
-    'Lebak',
-    'Semarang',
-    'Salatiga',
-    'Surakarta',
-    'Solo',
-    'Magelang',
-    'Pekalongan',
-    'Tegal',
-    'Brebes',
-    'Kudus',
-    'Jepara',
-    'Demak',
-    'Pati',
-    'Rembang',
-    'Blora',
-    'Klaten',
-    'Boyolali',
-    'Sukoharjo',
-    'Karanganyar',
-    'Sragen',
-    'Wonogiri',
-    'Purwokerto',
-    'Banyumas',
-    'Cilacap',
-    'Kebumen',
-    'Purworejo',
-    'Wonosobo',
-    'Temanggung',
-    'Kendal',
-    'Batang',
-    'Yogyakarta',
-    'Sleman',
-    'Bantul',
-    'Kulon Progo',
-    'Gunungkidul',
-    'Surabaya',
-    'Sidoarjo',
-    'Gresik',
-    'Mojokerto',
-    'Jombang',
-    'Malang',
-    'Batu',
-    'Pasuruan',
-    'Probolinggo',
-    'Lumajang',
-    'Jember',
-    'Banyuwangi',
-    'Bondowoso',
-    'Situbondo',
-    'Kediri',
-    'Blitar',
-    'Tulungagung',
-    'Trenggalek',
-    'Nganjuk',
-    'Madiun',
-    'Magetan',
-    'Ngawi',
-    'Ponorogo',
-    'Pacitan',
-    'Bojonegoro',
-    'Tuban',
-    'Lamongan',
-    'Bangkalan',
-    'Sampang',
-    'Pamekasan',
-    'Sumenep',
-    'Denpasar',
-    'Badung',
-    'Gianyar',
-    'Tabanan',
-    'Buleleng',
-    'Mataram',
-    'Kupang',
-    'Medan',
-    'Binjai',
-    'Deli Serdang',
-    'Pematangsiantar',
-    'Banda Aceh',
-    'Padang',
-    'Bukittinggi',
-    'Pekanbaru',
-    'Batam',
-    'Tanjungpinang',
-    'Jambi',
-    'Palembang',
-    'Bengkulu',
-    'Bandar Lampung',
-    'Pangkalpinang',
-    'Pontianak',
-    'Singkawang',
-    'Palangkaraya',
-    'Banjarmasin',
-    'Banjarbaru',
-    'Balikpapan',
-    'Samarinda',
-    'Bontang',
-    'Tarakan',
-    'Makassar',
-    'Gowa',
-    'Maros',
-    'Parepare',
-    'Palu',
-    'Kendari',
-    'Manado',
-    'Bitung',
-    'Gorontalo',
-    'Mamuju',
-    'Ambon',
-    'Ternate',
-    'Jayapura',
-    'Sorong',
-    'Merauke',
-  ];
-
-  static const List<String> provinces = <String>[
-    'DKI Jakarta',
-    'Jawa Barat',
-    'Jawa Tengah',
-    'Jawa Timur',
-    'DI Yogyakarta',
-    'Banten',
-    'Bali',
-    'Nusa Tenggara Barat',
-    'Nusa Tenggara Timur',
-    'Aceh',
-    'Sumatera Utara',
-    'Sumatera Barat',
-    'Sumatera Selatan',
-    'Riau',
-    'Kepulauan Riau',
-    'Jambi',
-    'Bengkulu',
-    'Lampung',
-    'Bangka Belitung',
-    'Kalimantan Barat',
-    'Kalimantan Tengah',
-    'Kalimantan Selatan',
-    'Kalimantan Timur',
-    'Kalimantan Utara',
-    'Sulawesi Utara',
-    'Sulawesi Tengah',
-    'Sulawesi Selatan',
-    'Sulawesi Tenggara',
-    'Sulawesi Barat',
-    'Gorontalo',
-    'Maluku',
-    'Maluku Utara',
-    'Papua',
-    'Papua Barat',
-  ];
 }
 
 class _Line {
@@ -614,8 +468,8 @@ class StoreAddressExtractor {
         !RegExp(r'\d{6,}').hasMatch(line)) {
       s += 3;
     }
-    if (_matchKnown(line, _Gazetteer.cities) != null) s += 2;
-    if (_matchKnown(line, _Gazetteer.provinces) != null) s += 2;
+    if (_matchKnown(line, IndonesianPlaces.cities) != null) s += 2;
+    if (_matchKnown(line, IndonesianPlaces.provinces) != null) s += 2;
     return s;
   }
 
@@ -843,12 +697,12 @@ class StoreAddressExtractor {
     for (final String part in text.split(',')) {
       final String seg = _clean(part);
       if (seg.length < 3 || !RegExp(r'[A-Za-z]{3}').hasMatch(seg)) continue;
-      final String? prov = _matchKnown(seg, _Gazetteer.provinces);
+      final String? prov = _matchKnown(seg, IndonesianPlaces.provinces);
       if (prov != null && province == null) {
         province = prov;
         continue;
       }
-      final String? known = _matchKnown(seg, _Gazetteer.cities);
+      final String? known = _matchKnown(seg, IndonesianPlaces.cities);
       if (known != null && city == null) {
         city = known;
         continue;
@@ -924,7 +778,7 @@ class StoreAddressExtractor {
 
   /// Mencocokkan nama kota hasil OCR dengan daftar kota (toleran 1-2 huruf).
   String _fixCity(String raw) {
-    return _matchKnown(raw, _Gazetteer.cities, whole: true) ?? raw;
+    return _matchKnown(raw, IndonesianPlaces.cities, whole: true) ?? raw;
   }
 
   /// Nama dari [names] yang cocok dengan [text]. Bila [whole] true, seluruh

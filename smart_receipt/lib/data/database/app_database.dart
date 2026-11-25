@@ -86,6 +86,11 @@ class AppDatabase {
         await db.execute(statement);
       }
     }
+    if (oldVersion < 8) {
+      for (final String statement in DatabaseSchema.upgradeToV8) {
+        await db.execute(statement);
+      }
+    }
   }
 
   /// Versi 5: kolom kustomisasi kategori serta tabel anggaran dan transaksi berulang.

@@ -278,64 +278,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: AppSpacing.lg),
 
-                // Fitur lanjutan (UAS).
+                // Pengaturan aplikasi. Fitur-fitur lain ada di menu Fitur.
                 Container(
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   decoration: AppDecorations.card(radius: AppRadius.cardLarge),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Fitur Lanjutan', style: textTheme.titleMedium),
+                      Text('Pengaturan Aplikasi', style: textTheme.titleMedium),
                       const SizedBox(height: AppSpacing.sm),
-                      _FeatureTile(
-                        icon: AppIcons.piggyBank,
-                        color: const Color(0xFF16855A),
-                        title: 'Anggaran',
-                        subtitle: 'Batas bulanan total dan per kategori',
-                        onTap: () => context.push(AppRoutes.budget),
-                      ),
-                      _FeatureTile(
-                        icon: AppIcons.shoppingCart,
-                        color: const Color(0xFF0EA5E9),
-                        title: 'Rencana Belanja',
-                        subtitle: 'Catat dulu, coret otomatis saat scan struk',
-                        onTap: () => context.push(AppRoutes.shoppingPlan),
-                      ),
-                      _FeatureTile(
-                        icon: AppIcons.slidersHorizontal,
-                        color: const Color(0xFF8B5CF6),
-                        title: 'Pencarian Lanjutan',
-                        subtitle: 'Cari toko, barang, tanggal, total, kategori',
-                        onTap: () => context.push(AppRoutes.search),
-                      ),
-                      _FeatureTile(
-                        icon: AppIcons.trendingUp,
-                        color: const Color(0xFFF59E0B),
-                        title: 'Bandingkan Harga',
-                        subtitle: 'Harga barang antar toko dan perubahannya',
-                        onTap: () => context.push(AppRoutes.priceCompare),
-                      ),
-                      _FeatureTile(
-                        icon: AppIcons.map,
-                        color: const Color(0xFFE11D48),
-                        title: 'Peta Toko',
-                        subtitle: 'Lokasi toko dari alamat struk dan GPS',
-                        onTap: () => context.push(AppRoutes.storeMap),
-                      ),
-                      _FeatureTile(
-                        icon: AppIcons.penLine,
-                        color: const Color(0xFF3B82F6),
-                        title: 'Catat Manual & Berulang',
-                        subtitle: 'Parkir, jajan, langganan bulanan',
-                        onTap: () => context.push(AppRoutes.manualEntry),
-                      ),
-                      _FeatureTile(
-                        icon: AppIcons.tags,
-                        color: const Color(0xFFF59E0B),
-                        title: 'Kelola Kategori',
-                        subtitle: 'Nama, ikon, warna, dan sembunyikan',
-                        onTap: () => context.push(AppRoutes.categories),
-                      ),
                       _FeatureTile(
                         icon: AppIcons.bell,
                         color: const Color(0xFFEC4899),

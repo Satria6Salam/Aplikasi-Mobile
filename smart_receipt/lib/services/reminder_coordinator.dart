@@ -1,6 +1,7 @@
 import '../core/utils/formatters.dart';
 import '../data/repositories/transaction_repository.dart';
 import 'budget_service.dart';
+import 'income_service.dart';
 import 'notification_service.dart';
 import 'recurring_service.dart';
 import 'reminder_settings.dart';
@@ -13,7 +14,9 @@ class ReminderCoordinator {
     required TransactionRepository transactions,
     required RecurringService recurring,
     required BudgetService budgets,
-  })  : _notifications = notifications,
+    IncomeService? incomes,
+  })  : _incomes = incomes,
+        _notifications = notifications,
         _transactions = transactions,
         _recurring = recurring,
         _budgets = budgets;
@@ -22,11 +25,17 @@ class ReminderCoordinator {
   final TransactionRepository _transactions;
   final RecurringService _recurring;
   final BudgetService _budgets;
+  final IncomeService? _incomes;
 
   /// Dipanggil saat aplikasi dibuka dalam keadaan sudah login.
   Future<void> onAppOpened(int userId) async {
     await _notifications.initialize();
     await _recurring.generateDue(userId);
+    // Pemasukan berulang (mis. uang saku tiap tanggal 1) sekaligus setoran
+    // otomatis ke tabungan. Galat di sini tidak boleh menghentikan sisanya.
+    try {
+      await _incomes?.generateDue(userId);
+    } catch (_) {}
     await _budgets.checkAndNotify(userId);
     await apply(await ReminderSettings.load(), userId);
   }

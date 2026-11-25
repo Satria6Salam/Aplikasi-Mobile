@@ -31,6 +31,7 @@ import 'safe_change_notifier.dart';
 
 export '../services/duplicate_detector.dart' show DuplicateMatch;
 export '../services/image_picker_service.dart' show ScanSource;
+export '../services/ocr_text_corrector.dart' show TextCorrection;
 export '../services/store_location_service.dart'
     show
         LocationPrecision,
@@ -335,6 +336,15 @@ class ScanViewModel extends ChangeNotifier with SafeChangeNotifier {
     final ScanDraft? draft = _draft;
     final double? total = draft?.totalAmount;
     if (draft == null || total == null || draft.items.isEmpty) return false;
+    // Struk berpajak/berpembulatan: barang dibandingkan dengan subtotalnya,
+    // bukan dengan total akhir, selama total belum diubah pengguna.
+    final ParsedReceiptData parsed = draft.parsed;
+    final double? parsedTotal = parsed.totalAmount;
+    final bool totalUntouched =
+        parsedTotal != null && (total - parsedTotal).abs() <= 1;
+    if (totalUntouched && parsed.hasBreakdown) {
+      return !parsed.itemsMatch(itemsTotal);
+    }
     return (itemsTotal - total).abs() > 1;
   }
 

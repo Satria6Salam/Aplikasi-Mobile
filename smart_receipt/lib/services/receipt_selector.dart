@@ -26,11 +26,12 @@ class ReceiptSelector {
   static const int _maxScoredItems = 20;
   static final RegExp _alphanumeric = RegExp(r'[A-Za-z0-9]');
 
-  /// True bila jumlah harga barang sama dengan total struk.
+  /// True bila jumlah harga barang sama dengan yang diharapkan: subtotal bila
+  /// struk memuat pajak/layanan/pembulatan, selain itu total struk.
   bool isConsistent(ParsedReceiptData parsed) {
-    final double? total = parsed.totalAmount;
-    if (total == null || total <= 0 || parsed.items.isEmpty) return false;
-    return (parsed.itemsTotal - total).abs() <= total * _sumTolerance;
+    final double? target = parsed.expectedItemsTotal;
+    if (target == null || target <= 0 || parsed.items.isEmpty) return false;
+    return parsed.itemsMatch(parsed.itemsTotal, relative: _sumTolerance);
   }
 
   /// True bila semua data utama terbaca dan saling cocok, sehingga foto
@@ -90,6 +91,14 @@ class ReceiptSelector {
     final bool totalFromKeyword =
         a.totalAmount != null ? a.totalFromKeyword : b.totalFromKeyword;
     final List<ParsedItem> items = a.items.isNotEmpty ? a.items : b.items;
+    // Rincian angka (subtotal, pajak, pembulatan) diambil dari bacaan yang
+    // memuat total, supaya semuanya berasal dari satu foto.
+    final ParsedReceiptData summarySource = a.totalAmount != null ? a : b;
+    final List<TextCorrection> corrections = <TextCorrection>[
+      ...a.corrections,
+      for (final TextCorrection c in b.corrections)
+        if (!a.corrections.contains(c)) c,
+    ];
     // Alamat dari bacaan yang lebih lengkap; bila kosong, dari bacaan lain.
     // (Sebelumnya alamat ikut hilang tiap kali foto diperjelas dan dibaca ulang.)
     final StoreAddress address = _betterAddress(a.address, b.address);
@@ -111,6 +120,15 @@ class ReceiptSelector {
         status: status,
         totalFromKeyword: totalFromKeyword,
         address: address,
+        subtotal: summarySource.subtotal,
+        taxAmount: summarySource.taxAmount,
+        taxLabel: summarySource.taxLabel,
+        serviceAmount: summarySource.serviceAmount,
+        discountAmount: summarySource.discountAmount,
+        roundingAmount: summarySource.roundingAmount,
+        itemsTarget: summarySource.itemsTarget,
+        itemsCount: a.itemsCount ?? b.itemsCount,
+        corrections: corrections,
       ),
       fromEnhancedImage: best.fromEnhancedImage,
     );

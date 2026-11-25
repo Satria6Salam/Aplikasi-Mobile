@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_routes.dart';
 import '../widgets/app_bottom_nav.dart';
 
-/// Cangkang aplikasi: menampung 4 menu utama (Beranda, Riwayat, Analisis, Profil)
+/// Cangkang aplikasi: menampung 4 menu utama (Beranda, Riwayat, Fitur, Profil)
 /// dengan bilah navigasi bawah. Setiap menu mempertahankan posisi gulirnya.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});

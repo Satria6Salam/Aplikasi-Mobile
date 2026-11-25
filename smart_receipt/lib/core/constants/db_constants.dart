@@ -3,7 +3,7 @@ class DbConstants {
   DbConstants._();
 
   static const String databaseName = 'smartreceipt.db';
-  static const int databaseVersion = 7;
+  static const int databaseVersion = 8;
 }
 
 /// Nama tabel.
@@ -22,6 +22,10 @@ class DbTables {
   static const String recurringTransactions = 'recurring_transactions';
   static const String shoppingPlans = 'shopping_plans';
   static const String storeLocations = 'store_locations';
+  static const String incomes = 'incomes';
+  static const String recurringIncomes = 'recurring_incomes';
+  static const String savingsGoals = 'savings_goals';
+  static const String savingsDeposits = 'savings_deposits';
 }
 
 /// Kolom tabel users.
@@ -251,4 +255,71 @@ class PlanStatus {
 
   static const String pending = 'pending';
   static const String bought = 'bought';
+}
+
+/// Kolom tabel incomes (pemasukan: uang saku, gaji, dll.).
+class IncomeCols {
+  IncomeCols._();
+
+  static const String id = 'income_id';
+  static const String userId = 'user_id';
+  static const String source = 'source';
+  static const String amount = 'amount';
+  static const String incomeDate = 'income_date';
+  static const String notes = 'notes';
+
+  /// Terisi bila pemasukan dibuat otomatis dari pemasukan berulang.
+  static const String recurringId = 'recurring_income_id';
+  static const String createdAt = 'created_at';
+}
+
+/// Kolom tabel recurring_incomes (pemasukan yang berulang tiap bulan).
+class RecurringIncomeCols {
+  RecurringIncomeCols._();
+
+  static const String id = 'recurring_income_id';
+  static const String userId = 'user_id';
+  static const String source = 'source';
+  static const String amount = 'amount';
+  static const String dayOfMonth = 'day_of_month';
+  static const String startMonth = 'start_month';
+  static const String lastGenerated = 'last_generated';
+  static const String isActive = 'is_active';
+
+  /// Target tabungan yang otomatis disetori tiap pemasukan ini dibuat.
+  static const String autoGoalId = 'auto_goal_id';
+  static const String autoAmount = 'auto_amount';
+  static const String notes = 'notes';
+  static const String createdAt = 'created_at';
+}
+
+/// Kolom tabel savings_goals (target tabungan).
+class GoalCols {
+  GoalCols._();
+
+  static const String id = 'goal_id';
+  static const String userId = 'user_id';
+  static const String name = 'name';
+  static const String targetAmount = 'target_amount';
+
+  /// Tenggat (tanggal); boleh kosong.
+  static const String deadline = 'deadline';
+  static const String notes = 'notes';
+  static const String createdAt = 'created_at';
+}
+
+/// Kolom tabel savings_deposits (setoran positif, penarikan negatif).
+class DepositCols {
+  DepositCols._();
+
+  static const String id = 'deposit_id';
+  static const String goalId = 'goal_id';
+  static const String userId = 'user_id';
+  static const String amount = 'amount';
+  static const String depositDate = 'deposit_date';
+
+  /// Pemasukan asal setoran (bila disisihkan saat mencatat pemasukan).
+  static const String incomeId = 'income_id';
+  static const String notes = 'notes';
+  static const String createdAt = 'created_at';
 }

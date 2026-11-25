@@ -210,6 +210,85 @@ CREATE TABLE ${DbTables.storeLocations} (
     ON DELETE CASCADE
 )''';
 
+  static const String createIncomes = '''
+CREATE TABLE ${DbTables.incomes} (
+  ${IncomeCols.id} INTEGER PRIMARY KEY AUTOINCREMENT,
+  ${IncomeCols.userId} INTEGER NOT NULL,
+  ${IncomeCols.source} TEXT NOT NULL,
+  ${IncomeCols.amount} REAL NOT NULL,
+  ${IncomeCols.incomeDate} TEXT NOT NULL,
+  ${IncomeCols.notes} TEXT,
+  ${IncomeCols.recurringId} INTEGER,
+  ${IncomeCols.createdAt} TEXT NOT NULL,
+  FOREIGN KEY (${IncomeCols.userId}) REFERENCES ${DbTables.users}(${UserCols.id})
+    ON DELETE CASCADE
+)''';
+
+  static const String createRecurringIncomes = '''
+CREATE TABLE ${DbTables.recurringIncomes} (
+  ${RecurringIncomeCols.id} INTEGER PRIMARY KEY AUTOINCREMENT,
+  ${RecurringIncomeCols.userId} INTEGER NOT NULL,
+  ${RecurringIncomeCols.source} TEXT NOT NULL,
+  ${RecurringIncomeCols.amount} REAL NOT NULL,
+  ${RecurringIncomeCols.dayOfMonth} INTEGER NOT NULL,
+  ${RecurringIncomeCols.startMonth} TEXT NOT NULL,
+  ${RecurringIncomeCols.lastGenerated} TEXT,
+  ${RecurringIncomeCols.isActive} INTEGER NOT NULL DEFAULT 1,
+  ${RecurringIncomeCols.autoGoalId} INTEGER,
+  ${RecurringIncomeCols.autoAmount} REAL,
+  ${RecurringIncomeCols.notes} TEXT,
+  ${RecurringIncomeCols.createdAt} TEXT NOT NULL,
+  FOREIGN KEY (${RecurringIncomeCols.userId}) REFERENCES ${DbTables.users}(${UserCols.id})
+    ON DELETE CASCADE
+)''';
+
+  static const String createSavingsGoals = '''
+CREATE TABLE ${DbTables.savingsGoals} (
+  ${GoalCols.id} INTEGER PRIMARY KEY AUTOINCREMENT,
+  ${GoalCols.userId} INTEGER NOT NULL,
+  ${GoalCols.name} TEXT NOT NULL,
+  ${GoalCols.targetAmount} REAL NOT NULL,
+  ${GoalCols.deadline} TEXT,
+  ${GoalCols.notes} TEXT,
+  ${GoalCols.createdAt} TEXT NOT NULL,
+  FOREIGN KEY (${GoalCols.userId}) REFERENCES ${DbTables.users}(${UserCols.id})
+    ON DELETE CASCADE
+)''';
+
+  static const String createSavingsDeposits = '''
+CREATE TABLE ${DbTables.savingsDeposits} (
+  ${DepositCols.id} INTEGER PRIMARY KEY AUTOINCREMENT,
+  ${DepositCols.goalId} INTEGER NOT NULL,
+  ${DepositCols.userId} INTEGER NOT NULL,
+  ${DepositCols.amount} REAL NOT NULL,
+  ${DepositCols.depositDate} TEXT NOT NULL,
+  ${DepositCols.incomeId} INTEGER,
+  ${DepositCols.notes} TEXT,
+  ${DepositCols.createdAt} TEXT NOT NULL,
+  FOREIGN KEY (${DepositCols.goalId}) REFERENCES ${DbTables.savingsGoals}(${GoalCols.id})
+    ON DELETE CASCADE,
+  FOREIGN KEY (${DepositCols.userId}) REFERENCES ${DbTables.users}(${UserCols.id})
+    ON DELETE CASCADE,
+  FOREIGN KEY (${DepositCols.incomeId}) REFERENCES ${DbTables.incomes}(${IncomeCols.id})
+    ON DELETE SET NULL
+)''';
+
+  static const List<String> createIncomeIndexes = <String>[
+    'CREATE INDEX idx_incomes_user_date ON ${DbTables.incomes}(${IncomeCols.userId}, ${IncomeCols.incomeDate})',
+    'CREATE INDEX idx_goals_user ON ${DbTables.savingsGoals}(${GoalCols.userId})',
+    'CREATE INDEX idx_deposits_goal ON ${DbTables.savingsDeposits}(${DepositCols.goalId})',
+    'CREATE INDEX idx_deposits_user_date ON ${DbTables.savingsDeposits}(${DepositCols.userId}, ${DepositCols.depositDate})',
+  ];
+
+  /// Perubahan skema dari versi 7 ke versi 8 (pemasukan dan tabungan).
+  static const List<String> upgradeToV8 = <String>[
+    createIncomes,
+    createRecurringIncomes,
+    createSavingsGoals,
+    createSavingsDeposits,
+    ...createIncomeIndexes,
+  ];
+
   static const String createTransLocationIndex =
       'CREATE INDEX idx_trans_location ON ${DbTables.transactions}(${TransCols.userId}, ${TransCols.latitude})';
 
@@ -249,6 +328,7 @@ CREATE TABLE ${DbTables.storeLocations} (
     'CREATE INDEX idx_items_category ON ${DbTables.transactionItems}(${ItemCols.categoryId})',
     createShoppingPlansIndex,
     createTransLocationIndex,
+    ...createIncomeIndexes,
   ];
 
   /// Perubahan skema dari versi 1 ke versi 2 (tabel rincian barang).
@@ -272,6 +352,10 @@ CREATE TABLE ${DbTables.storeLocations} (
     createRecurringTransactions,
     createShoppingPlans,
     createStoreLocations,
+    createIncomes,
+    createRecurringIncomes,
+    createSavingsGoals,
+    createSavingsDeposits,
   ];
 
   /// Kategori awal (label kelas Naive Bayes), 15 kategori.

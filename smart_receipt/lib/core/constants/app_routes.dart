@@ -7,6 +7,7 @@ class AppRoutes {
   static const String dashboard = '/dashboard';
   static const String history = '/history';
   static const String analysis = '/analysis';
+  static const String features = '/features';
   static const String settings = '/settings';
   static const String scan = '/scan';
   static const String preview = '/preview';
@@ -20,5 +21,7 @@ class AppRoutes {
   static const String shoppingPlan = '/shopping-plan';
   static const String storeMap = '/store-map';
   static const String search = '/search';
+  static const String incomes = '/incomes';
+  static const String savings = '/savings';
   static const String priceCompare = '/price-compare';
 }

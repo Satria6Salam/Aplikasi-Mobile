@@ -14,6 +14,8 @@ import 'data/database/app_database.dart';
 import 'core/theme/category_palette.dart';
 import 'data/models/category_model.dart';
 import 'data/repositories/budget_repository.dart';
+import 'data/repositories/income_repository.dart';
+import 'data/repositories/savings_repository.dart';
 import 'data/repositories/shopping_plan_repository.dart';
 import 'data/repositories/store_location_repository.dart';
 import 'data/repositories/category_repository.dart';
@@ -25,6 +27,8 @@ import 'data/repositories/session_repository.dart';
 import 'data/repositories/transaction_repository.dart';
 import 'data/repositories/user_repository.dart';
 import 'services/budget_service.dart';
+import 'services/cash_flow_service.dart';
+import 'services/income_service.dart';
 import 'services/shopping_plan_service.dart';
 import 'services/geocoding_service.dart';
 import 'services/store_location_service.dart';
@@ -71,6 +75,8 @@ Future<void> main() async {
   final SessionRepository sessionRepository = SessionRepository();
   final BudgetRepository budgetRepository = BudgetRepository();
   final RecurringRepository recurringRepository = RecurringRepository();
+  final IncomeRepository incomeRepository = IncomeRepository();
+  final SavingsRepository savingsRepository = SavingsRepository();
   final ShoppingPlanRepository shoppingPlanRepository =
       ShoppingPlanRepository();
 
@@ -104,11 +110,22 @@ Future<void> main() async {
     recurring: recurringRepository,
     transactions: transactionRepository,
   );
+  // Pemasukan, tabungan, dan arus kas (pemasukan - pengeluaran - tabungan).
+  final IncomeService incomeService = IncomeService(
+    incomes: incomeRepository,
+    savings: savingsRepository,
+  );
+  final CashFlowService cashFlowService = CashFlowService(
+    incomes: incomeRepository,
+    savings: savingsRepository,
+    transactions: transactionRepository,
+  );
   final ReminderCoordinator reminderCoordinator = ReminderCoordinator(
     notifications: notificationService,
     transactions: transactionRepository,
     recurring: recurringService,
     budgets: budgetService,
+    incomes: incomeService,
   );
   final ExportService exportService = ExportService(
     transactions: transactionRepository,
@@ -253,6 +270,10 @@ Future<void> main() async {
         Provider<ImageFormatService>.value(value: imageFormatService),
         Provider<ImagePickerService>.value(value: imagePickerService),
         Provider<StoreLocationService>.value(value: storeLocationService),
+        Provider<IncomeRepository>.value(value: incomeRepository),
+        Provider<SavingsRepository>.value(value: savingsRepository),
+        Provider<IncomeService>.value(value: incomeService),
+        Provider<CashFlowService>.value(value: cashFlowService),
         // ViewModel (state management).
         ChangeNotifierProvider<AuthViewModel>.value(value: authViewModel),
         ChangeNotifierProvider<DashboardViewModel>.value(

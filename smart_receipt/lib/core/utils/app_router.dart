@@ -9,11 +9,14 @@ import '../../views/budget/budget_screen.dart';
 import '../../views/plan/shopping_plan_screen.dart';
 import '../../views/category/category_management_screen.dart';
 import '../../views/dashboard/dashboard_screen.dart';
+import '../../views/features/features_screen.dart';
 import '../../views/profile/data_tools_screen.dart';
 import '../../views/profile/notification_settings_screen.dart';
 import '../../views/history/history_screen.dart';
+import '../../views/income/income_screen.dart';
 import '../../views/location/store_map_screen.dart';
 import '../../views/price/price_comparison_screen.dart';
+import '../../views/savings/savings_screen.dart';
 import '../../views/search/search_screen.dart';
 import '../../views/profile/settings_screen.dart';
 import '../../views/scanner/camera_screen.dart';
@@ -123,8 +126,8 @@ class AppRouter {
             StatefulShellBranch(
               routes: <RouteBase>[
                 GoRoute(
-                  path: AppRoutes.analysis,
-                  builder: (context, state) => const AnalysisScreen(),
+                  path: AppRoutes.features,
+                  builder: (context, state) => const FeaturesScreen(),
                 ),
               ],
             ),
@@ -169,6 +172,20 @@ class AppRouter {
           path: AppRoutes.shoppingPlan,
           pageBuilder: (context, state) =>
               _page(state, const ShoppingPlanScreen()),
+        ),
+        // Analisis dibuka dari menu Fitur atau tautan di Beranda.
+        GoRoute(
+          path: AppRoutes.analysis,
+          pageBuilder: (context, state) =>
+              _page(state, const AnalysisScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.incomes,
+          pageBuilder: (context, state) => _page(state, const IncomeScreen()),
+        ),
+        GoRoute(
+          path: AppRoutes.savings,
+          pageBuilder: (context, state) => _page(state, const SavingsScreen()),
         ),
         GoRoute(
           path: AppRoutes.search,
